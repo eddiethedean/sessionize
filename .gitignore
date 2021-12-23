@@ -1,0 +1,12 @@
+creds.py
+notebooks/
+worksheet_functions/
+sessionize.egg-info/
+sessionize/__pycache__/
+dist/
+data/test.db
+build/
+.vscode/
+.ipynb_checkpoints/
+__pycache__/
+tests/__pycache__/
