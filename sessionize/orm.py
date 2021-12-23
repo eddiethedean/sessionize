@@ -9,7 +9,7 @@ from sessionize.utils.update import update_records_session
 from sessionize.utils.sa_orm import get_table
 
 
-Record = dict[str, Any]
+from sessionize.utils.custom_types import Record
 
 
 class SessionTable:
