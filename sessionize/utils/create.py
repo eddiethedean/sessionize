@@ -1,26 +1,9 @@
 from typing import Optional
-import decimal
-import datetime
 
 import sqlalchemy as sa
 from sqlalchemy.schema import DropTable, CreateTable
 from sqlalchemy.engine import Engine
-
-
-_type_convert = {
-    int: sa.sql.sqltypes.Integer,
-    str: sa.sql.sqltypes.Unicode,
-    float: sa.sql.sqltypes.Float,
-    decimal.Decimal: sa.sql.sqltypes.Numeric,
-    datetime.datetime: sa.sql.sqltypes.DateTime,
-    bytes: sa.sql.sqltypes.LargeBinary,
-    bool: sa.sql.sqltypes.Boolean,
-    datetime.date: sa.sql.sqltypes.Date,
-    datetime.time: sa.sql.sqltypes.Time,
-    datetime.timedelta: sa.sql.sqltypes.Interval,
-    list: sa.sql.sqltypes.ARRAY,
-    dict: sa.sql.sqltypes.JSON
-}
+from sessionize.utils.type_convert import _type_convert
 
 
 def create_table(

@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.orm.session import sessionmaker
 
-from sessionize.utils.types import Record
+from sessionize.utils.custom_types import Record
 from sessionize.utils.sa_orm import get_class, get_table
 
 

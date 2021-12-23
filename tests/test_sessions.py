@@ -2,7 +2,7 @@ import unittest
 
 from sqlalchemy.orm import Session
 
-from sessionize.setup_test import sqlite_setup, postgres_setup, mysql_setup
+from sessionize.setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.delete import delete_records_session
 from sessionize.utils.insert import insert_records_session
 from sessionize.utils.update import update_records_session
@@ -36,9 +36,6 @@ class TestDeleteRecords(unittest.TestCase):
     def test_delete_records_postgres(self):
         self.delete_records(postgres_setup)
 
-    def test_delete_records_mysql(self):
-        self.delete_records(mysql_setup)
-
     def delete_records_session_fails(self, setup_function):
         engine, table = setup_function()
         
@@ -66,8 +63,6 @@ class TestDeleteRecords(unittest.TestCase):
     def test_delete_records_session_fails_postgres(self):
         self.delete_records_session_fails(postgres_setup)
 
-    def test_delete_records_session_fails_mysql(self):
-        self.delete_records_session_fails(mysql_setup)
 
 # insert_df_session
 class TestInsertRecords(unittest.TestCase):
@@ -102,9 +97,6 @@ class TestInsertRecords(unittest.TestCase):
     def test_insert_records_postgres(self):
         self.insert_records(postgres_setup)
 
-    def test_insert_records_mysql(self):
-        self.insert_records(mysql_setup)
-
     def insert_records_session_fails(self, setup_function):
         engine, table = setup_function()
 
@@ -137,8 +129,6 @@ class TestInsertRecords(unittest.TestCase):
     def test_insert_records_session_fails_postgres(self):
         self.insert_records_session_fails(postgres_setup)
 
-    def test_insert_records_session_fails_mysql(self):
-        self.insert_records_session_fails(mysql_setup)
 
 # update_df_session
 class TestUpdateRecords(unittest.TestCase):
@@ -171,9 +161,6 @@ class TestUpdateRecords(unittest.TestCase):
 
     def test_update_records_postgres(self):
         self.update_records(postgres_setup)
-
-    def test_update_records_mysql(self):
-        self.update_records(mysql_setup)
 
     def insert_records_session_fails(self, setup_function):
         """
@@ -210,9 +197,6 @@ class TestUpdateRecords(unittest.TestCase):
 
     def test_insert_records_session_fails_postgres(self):
         self.insert_records_session_fails(postgres_setup)
-
-    def test_insert_records_session_fails_mysql(self):
-        self.insert_records_session_fails(mysql_setup)
 
 
 class TestCombined(unittest.TestCase):
@@ -252,9 +236,6 @@ class TestCombined(unittest.TestCase):
     def test_insert_update_psotgres(self):
         self.insert_update(postgres_setup)
 
-    def test_insert_update_mysql(self):
-        self.insert_update(mysql_setup)
-
     def delete_update_fail(self, setup_function):
         engine, table = setup_function()
 
@@ -287,9 +268,6 @@ class TestCombined(unittest.TestCase):
     def test_delete_update_fail_postgres(self):
         self.delete_update_fail(postgres_setup)
 
-    def test_delete_update_fail_mysql(self):
-        self.delete_update_fail(mysql_setup)
-
     def update_delete(self, setup_function):
         engine, table = setup_function()
 
@@ -316,9 +294,6 @@ class TestCombined(unittest.TestCase):
 
     def test_update_delete_postgres(self):
         self.update_delete(postgres_setup)
-
-    def test_update_delete_mysql(self):
-        self.update_delete(mysql_setup)
 
     def delete_insert_update(self, setup_function):
         engine, table = setup_function()
@@ -354,6 +329,3 @@ class TestCombined(unittest.TestCase):
 
     def test_delete_insert_update_postgres(self):
         self.delete_insert_update(postgres_setup)
-
-    def test_delete_insert_update_mysql(self):
-        self.delete_insert_update(mysql_setup)

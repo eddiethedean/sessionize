@@ -7,8 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.sql.schema import PrimaryKeyConstraint
 
-
-SqlConnection = Union[Engine, Session, Connection]
+from types import SqlConnection
 
 
 def primary_keys(table: sa.Table) -> list[str]:

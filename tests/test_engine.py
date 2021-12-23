@@ -6,7 +6,7 @@ from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sessionize.utils.sa_orm import primary_keys, has_primary_key
 from sessionize.utils.sa_orm import get_table, get_class, get_column
 from sessionize.utils.select import select_records
-from sessionize.setup_test import sqlite_setup, postgres_setup, mysql_setup
+from sessionize.setup_test import sqlite_setup, postgres_setup
 
 # primary_keys
 class TestPrimaryKeys(unittest.TestCase):
@@ -21,9 +21,6 @@ class TestPrimaryKeys(unittest.TestCase):
 
     def test_primary_keys_postgres(self):
         self.primary_keys(postgres_setup)
-
-    def test_primary_keys_mysql(self):
-        self.primary_keys(mysql_setup)
         
 
 # has_primary_key
@@ -39,9 +36,6 @@ class TestHasPrimaryKey(unittest.TestCase):
 
     def test_has_primary_key_postgres(self):
         self.has_primary_key(postgres_setup)
-
-    def test_has_primary_key_mysql(self):
-        self.has_primary_key(mysql_setup)
 
 
 # get_table
@@ -59,9 +53,6 @@ class TestGetTable(unittest.TestCase):
     def test_get_table_postgres(self):
         self.get_table(postgres_setup)
 
-    def test_get_table_mysql(self):
-        self.get_table(mysql_setup) 
-
 
 # get_class
 class TestGetClass(unittest.TestCase):
@@ -75,9 +66,6 @@ class TestGetClass(unittest.TestCase):
 
     def test_get_class_postgres(self):
         self.get_class(postgres_setup)
-
-    def test_get_class_mysql(self):
-        self.get_class(mysql_setup)
 
 
 # get_column
@@ -93,9 +81,6 @@ class TestGetColumn(unittest.TestCase):
 
     def test_get_column_postgres(self):
         self.get_column(postgres_setup)
-
-    def test_get_column_mysql(self):
-        self.get_column(mysql_setup)
 
 
 class TestSelectRecords(unittest.TestCase):
@@ -115,6 +100,3 @@ class TestSelectRecords(unittest.TestCase):
 
     def test_select_records_postgres(self):
         self.select_records(postgres_setup)
-
-    def test_select_records_mysql(self):
-        self.select_records(mysql_setup)

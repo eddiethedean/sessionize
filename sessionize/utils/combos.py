@@ -3,7 +3,7 @@ from typing import Optional, Union
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from sessionize.utils.types import Record
+from sessionize.utils.custom_types import Record
 from sessionize.utils.sa_orm import get_table
 
 # TODO: finish insert_update_records_session function

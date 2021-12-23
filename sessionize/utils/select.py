@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql import select
 
 from sessionize.utils.sa_orm import get_column, get_table
-from sessionize.utils.types import Record, SqlConnection
+from sessionize.utils.custom_types import Record, SqlConnection
 
 
 def select_records(

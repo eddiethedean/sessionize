@@ -4,7 +4,6 @@ import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 from alembic.runtime.migration import MigrationContext
 from alembic.operations import Operations
-from sqlalchemy.sql.schema import PrimaryKeyConstraint
 
 from sessionize.utils.sa_orm import get_table, get_primary_key_constraints
 from sessionize.utils.insert import insert_from_table
