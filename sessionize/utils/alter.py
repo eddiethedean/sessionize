@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
@@ -8,6 +8,7 @@ from alembic.operations import Operations
 from sessionize.utils.sa_orm import get_table, get_primary_key_constraints
 from sessionize.utils.insert import insert_from_table
 from sessionize.utils.drop import drop_table
+from sessionize.utils.type_convert import _type_convert
 
 
 def rename_column(
@@ -51,13 +52,23 @@ def drop_column(
     return get_table(table_name, engine)
 
 
-# TODO: add column function
 def add_column(
     table_name: Union[str, sa.Table],
     column_name: str,
-    engine: Engine
+    dtype: type,
+    engine: Engine,
+    schema: Optional[str] = None
 ) -> sa.Table:
-    pass
+    if isinstance(table_name, sa.Table):
+        table_name = table_name.name
+    sa_type = _type_convert[dtype]
+    conn = engine.connect()
+    ctx = MigrationContext.configure(conn)
+    op = Operations(ctx)
+    col = sa.Column(column_name, sa_type)
+    op.add_column(table_name, col, schema)
+    return get_table(table_name, engine)
+
 
 def rename_table(
     old_table_name: Union[str, sa.Table],

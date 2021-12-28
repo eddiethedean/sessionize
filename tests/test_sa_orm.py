@@ -3,10 +3,11 @@ import unittest
 import sqlalchemy as sa
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 
+from sessionize.setup_test import sqlite_setup, postgres_setup
+from sessionize.utils.select import select_records
 from sessionize.utils.sa_orm import primary_keys, has_primary_key
 from sessionize.utils.sa_orm import get_table, get_class, get_column
-from sessionize.utils.select import select_records
-from sessionize.setup_test import sqlite_setup, postgres_setup
+
 
 # primary_keys
 class TestPrimaryKeys(unittest.TestCase):

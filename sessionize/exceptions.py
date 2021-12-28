@@ -1,0 +1,2 @@
+class ForceFail(Exception):
+    pass

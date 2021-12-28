@@ -19,8 +19,14 @@ def setup(connection_string: str) -> tuple[Engine, Table]:
         name = Column(String(20))
         age = Column(Integer)
 
-    Base.metadata.drop_all(bind=engine, tables=[People.__table__])
-    Base.metadata.create_all(bind=engine, tables=[People.__table__])
+    class Places(Base):
+        __tablename__ = 'places'
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        address = Column(String(100))
+
+    Base.metadata.reflect(bind=engine)
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine, tables=[People.__table__, Places.__table__])
 
     people = [
         People(name='Olivia', age=17),
