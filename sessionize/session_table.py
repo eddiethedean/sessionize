@@ -6,8 +6,9 @@ import sqlalchemy as sa
 from sessionize.utils.delete import delete_records_session
 from sessionize.utils.insert import insert_records_session
 from sessionize.utils.update import update_records_session
-from sessionize.utils.sa_orm import get_table
+from sessionize.utils.sa_orm import get_table, has_primary_key
 from sessionize.utils.custom_types import Record
+from sessionize.exceptions import MissingPrimaryKey
 
 
 class SessionTable:
@@ -16,6 +17,10 @@ class SessionTable:
         self.engine = engine
         self.schema = schema
         self.session = Session(engine)
+        # check for primary key column
+        if not has_primary_key(self.get_sa_table()):
+            raise MissingPrimaryKey('''sessionize requires sql table to have primary key to work properly.
+            Use sessionize.create_primary_key to add a primary key to your table.''')
 
     def get_sa_table(self):
         return get_table(self.name, self.engine, self.schema)
