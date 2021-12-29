@@ -1,11 +1,31 @@
 from typing import Optional, Union
 
 import sqlalchemy as sa
+from sqlalchemy.engine import Engine
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql.schema import PrimaryKeyConstraint
 
 from sessionize.utils.custom_types import SqlConnection
+
+
+def _get_table_name(
+    table: Union[sa.Table, str]
+) -> str:
+    if isinstance(table, sa.Table):
+        return table.name
+    if isinstance(table, str):
+        return table
+
+
+def _get_table(
+    table_name: Union[str, sa.Table],
+    engine: Engine
+) -> sa.Table:
+    if isinstance(table_name, sa.Table):
+        return table_name
+    if isinstance(table_name, str):
+        return get_table(table_name, engine)
 
 
 def primary_keys(table: sa.Table) -> list[str]:

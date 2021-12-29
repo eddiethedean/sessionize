@@ -5,6 +5,7 @@ from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 from sessionize.utils.custom_types import Record
 from sessionize.utils.sa_orm import get_class, get_table
+from sessionize.utils.sa_orm import _get_table
 
 
 def update_records_session(
@@ -41,8 +42,7 @@ def update_records_session(
     None
     """
     engine = session.get_bind()
-    if isinstance(table, str):
-        table = get_table(table, engine)
+    table = _get_table(table, engine)
     table_name = table.name
     if table_class is None:
         table_class = get_class(table_name, engine, schema=schema)

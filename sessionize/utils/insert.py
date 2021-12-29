@@ -5,7 +5,7 @@ from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.orm.session import sessionmaker
 
 from sessionize.utils.custom_types import Record
-from sessionize.utils.sa_orm import get_class, get_table
+from sessionize.utils.sa_orm import get_class, _get_table
 
 
 def insert_from_table_session(
@@ -17,10 +17,8 @@ def insert_from_table_session(
     Inserts all records from table1 into table2.
     Only add inserts to session. Does not execute.
     """
-    if isinstance(table1, str):
-        table1 = get_table(table1, session)
-    if isinstance(table2, str):
-        table2 = get_table(table2, session)
+    table1 = _get_table(table1, session)
+    table2 = _get_table(table2, session)
     session.execute(table2.insert().from_select(table1.columns.keys(), table1))
 
 
@@ -33,10 +31,8 @@ def insert_from_table(
     Inserts all records from table1 into table2.
     Executes inserts.
     """
-    if isinstance(table1, str):
-        table1 = get_table(table1, engine)
-    if isinstance(table2, str):
-        table2 = get_table(table2, engine)
+    table1 = _get_table(table1, engine)
+    table2 = _get_table(table2, engine)
     with sessionmaker(engine).begin() as session:
         insert_from_table_session(table1, table2, session)
 
@@ -74,8 +70,7 @@ def insert_records_session(
     None
     """
     engine = session.get_bind()
-    if isinstance(table, str):
-        table = get_table(table, engine)
+    table = _get_table(table, engine)
     table_name = table.name
 
     if table_class is None:
@@ -91,7 +86,6 @@ def insert_records(
     schema: Optional[str] = None,
     table_class: Optional[DeclarativeMeta] = None
 ) -> None:
-    if isinstance(table, str):
-        table = get_table(table, engine)
+    table = _get_table(table, engine)
     with sessionmaker(engine).begin() as session:
         insert_records_session(table, records, session, schema, table_class)

@@ -9,6 +9,15 @@ from sessionize.utils.sa_orm import get_table, get_primary_key_constraints
 from sessionize.utils.insert import insert_from_table
 from sessionize.utils.drop import drop_table
 from sessionize.utils.type_convert import _type_convert
+from sessionize.utils.sa_orm import _get_table, _get_table_name
+
+
+def _get_op(
+    engine: Engine
+) -> Operations:
+    conn = engine.connect()
+    ctx = MigrationContext.configure(conn)
+    return Operations(ctx)
 
 
 def rename_column(
@@ -22,11 +31,8 @@ def rename_column(
 
         Returns newly reflected SqlAlchemy Table.
     """
-    if isinstance(table_name, sa.Table):
-        table_name = table_name.name
-    conn = engine.connect()
-    ctx = MigrationContext.configure(conn)
-    op = Operations(ctx)
+    table_name = _get_table_name(table_name)
+    op = _get_op(engine)
     with op.batch_alter_table(table_name) as batch_op:
         batch_op.alter_column(old_col_name, nullable=True, new_column_name=new_col_name)
     return get_table(table_name, engine)
@@ -42,11 +48,8 @@ def drop_column(
 
         Returns newly reflected SqlAlchemy Table.
     """
-    if isinstance(table_name, sa.Table):
-        table_name = table_name.name
-    conn = engine.connect()
-    ctx = MigrationContext.configure(conn)
-    op = Operations(ctx)
+    table_name = _get_table_name(table_name)
+    op = _get_op(engine)
     with op.batch_alter_table(table_name) as batch_op:
         batch_op.drop_column(col_name)
     return get_table(table_name, engine)
@@ -59,12 +62,9 @@ def add_column(
     engine: Engine,
     schema: Optional[str] = None
 ) -> sa.Table:
-    if isinstance(table_name, sa.Table):
-        table_name = table_name.name
+    table_name = _get_table_name(table_name)
     sa_type = _type_convert[dtype]
-    conn = engine.connect()
-    ctx = MigrationContext.configure(conn)
-    op = Operations(ctx)
+    op = _get_op(engine)
     col = sa.Column(column_name, sa_type)
     op.add_column(table_name, col, schema)
     return get_table(table_name, engine)
@@ -80,11 +80,8 @@ def rename_table(
 
         Returns newly reflected SqlAlchemy Table.
     """
-    if isinstance(old_table_name, sa.Table):
-        table_name = old_table_name.name
-    conn = engine.connect()
-    ctx = MigrationContext.configure(conn)
-    op = Operations(ctx)
+    old_table_name = _get_table_name(old_table_name)
+    op = _get_op(engine)
     op.rename_table(old_table_name, new_table_name)
     return get_table(new_table_name, engine)
 
@@ -101,11 +98,8 @@ def copy_table(
 
         Returns the new SqlAlchemy Table.
     """
-    if isinstance(table, str):
-        table = get_table(table, engine)
-    conn = engine.connect()
-    ctx = MigrationContext.configure(conn)
-    op = Operations(ctx)
+    table = _get_table(table, engine)
+    op = _get_op(engine)
     if if_exists == 'replace':
         drop_table(new_table_name, engine)
     op.create_table(new_table_name, *table.c, table.metadata)
@@ -125,12 +119,9 @@ def replace_primary_key(
 
         Returns newly reflected SqlAlchemy Table.
     """
-    if isinstance(table, str):
-        table = get_table(table, engine)
+    table = _get_table(table, engine)
     table_name = table.name
-    conn = engine.connect()
-    ctx = MigrationContext.configure(conn)
-    op = Operations(ctx)
+    op = _get_op(engine)
     keys = get_primary_key_constraints(table)
     
     with op.batch_alter_table(table_name) as batch_op:
@@ -157,11 +148,8 @@ def create_primary_key(
 
         Returns newly reflected SqlAlchemy Table.
     """
-    if isinstance(table_name, sa.Table):
-        table_name = table_name.name
-    conn = engine.connect()
-    ctx = MigrationContext.configure(conn)
-    op = Operations(ctx)
+    table_name = _get_table_name(table_name)
+    op = _get_op(engine)
     with op.batch_alter_table(table_name) as batch_op:
         batch_op.create_primary_key(f'pk_{table_name}', [column_name])
     return get_table(table_name, engine)
@@ -177,7 +165,6 @@ def name_primary_key(
 
         Returns newly reflected SqlAlchemy Table.
     """
-    if isinstance(table_name, sa.Table):
-        table_name = table_name.name
+    table_name = _get_table_name(table_name)
     create_primary_key(table_name, column_name, engine)
     return get_table(table_name, engine)

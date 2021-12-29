@@ -135,7 +135,20 @@ class TestRenameTable(unittest.TestCase):
 
 # TODO: copy_table tests
 class TestCopyTable(unittest.TestCase):
-    pass
+    def copy_table(self, setup_function):
+        engine, table = setup_function()
+        new_table_name = 'employees'
+        table_names = inspect(engine).get_table_names()
+        copy_table(table.name, new_table_name, engine)
+        table_names.append(new_table_name)
+        new_table_names = inspect(engine).get_table_names()
+        self.assertSetEqual(set(table_names), set(new_table_names))
+
+    def test_copy_table_sqlite(self):
+        self.copy_table(sqlite_setup)
+
+    def test_copy_table_postgres(self):
+        self.copy_table(postgres_setup)
  
 # TODO: replace_primary_key tests
 class TestReplacePrimaryKey(unittest.TestCase):

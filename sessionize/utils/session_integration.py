@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from sessionize.utils.custom_types import Record
-from sessionize.utils.sa_orm import get_table
+from sessionize.utils.sa_orm import _get_table
 
 # TODO: finish insert_update_records_session function
 def insert_update_records_session(
@@ -36,8 +36,7 @@ def insert_update_records_session(
     -------
     None
     """
-    if isinstance(table, str):
-        table = get_table(table, session)
+    table = _get_table(table, session)
     # figure out which records are updates, with primary key matches
     updates = []
 

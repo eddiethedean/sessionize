@@ -3,7 +3,7 @@ from typing import Union
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from sessionize.utils.sa_orm import get_table
+from sessionize.utils.sa_orm import _get_table
 
 
 def delete_records_session(
@@ -34,8 +34,7 @@ def delete_records_session(
     -------
     None
     """
-    if isinstance(table, str):
-        table = get_table(table, session)
+    table = _get_table(table, session)
     col = table.c[col_name]
     session.query(table).filter(col.in_(values)).delete(synchronize_session=False)
 
@@ -44,6 +43,5 @@ def delete_all_records_session(
     table: Union[sa.Table, str],
     session: Session
 ) -> None:
-    if isinstance(table, str):
-        table = get_table(table, session)
+    table = _get_table(table, session)
     session.query(table).delete()

@@ -4,7 +4,7 @@ from typing import Optional, Any, Union, Generator
 import sqlalchemy as sa
 from sqlalchemy.sql import select
 
-from sessionize.utils.sa_orm import get_column, get_table
+from sessionize.utils.sa_orm import get_column, _get_table
 from sessionize.utils.custom_types import Record, SqlConnection
 
 
@@ -31,8 +31,7 @@ def select_records(
     -------
     list of sql table records or generator of lists of records.
     """
-    if isinstance(table, str):
-        table = get_table(table, connection)
+    table = _get_table(table, connection)
     if chunksize is None:
         return select_records_all(table, connection)
     else:
@@ -58,8 +57,7 @@ def select_records_all(
     -------
     list of sql table records.
     """
-    if isinstance(table, str):
-        table = get_table(table, connection)
+    table = _get_table(table, connection)
     query = select(table).order_by(*table.primary_key.columns.values())
     results = connection.execute(query)
     return [dict(r) for r in results]
@@ -87,8 +85,7 @@ def select_records_chunks(
     -------
     Generator of lists of sql table records.
     """
-    if isinstance(table, str):
-        table = get_table(table, connection)
+    table = _get_table(table, connection)
     query = select(table).order_by(*table.primary_key.columns.values())
     stream = connection.execute(query, execution_options={'stream_results': True})
     for results in stream.partitions(chunksize):
@@ -119,8 +116,7 @@ def select_existing_values(
     -------
     List of matching values.
     """
-    if isinstance(table, str):
-        table = get_table(table, conection)
+    table = _get_table(table, conection)
     column = get_column(table, column_name)
     query = select([column]).where(column.in_(values))
     return conection.execute(query).scalars().fetchall()
@@ -153,8 +149,7 @@ def select_column_values(
     -------
     list of sql table column values or generator of lists of values.
     """
-    if isinstance(table, str):
-        table = get_table(table, connection)
+    table = _get_table(table, connection)
     if chunksize is None:
         return select_column_values_all(table, column_name, connection)
     else:
@@ -184,8 +179,7 @@ def select_column_values_all(
     -------
     list of sql table column values.
     """
-    if isinstance(table, str):
-        table = get_table(table, connection)
+    table = _get_table(table, connection)
     query = select(table.c[column_name])
     return connection.execute(query).scalars().all()
 
@@ -215,8 +209,7 @@ def select_column_values_chunks(
     -------
     Generator of chunksized lists of sql table column values.
     """
-    if isinstance(table, str):
-        table = get_table(table, connection)
+    table = _get_table(table, connection)
     query = select(table.c[column_name])
     stream = connection.execute(query, execution_options={'stream_results': True})
     for results in stream.scalars().partitions(chunksize):
