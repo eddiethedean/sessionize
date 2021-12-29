@@ -26,7 +26,10 @@ class SessionTable:
         return self
 
     def __exit__(self, type, value, traceback):
-        self.commit()
+        if type:
+            self.session.rollback()
+        else:
+            self.commit()
 
     def commit(self):
         self.session.commit()
