@@ -2,10 +2,11 @@ from typing import Optional, Union
 
 import sqlalchemy as sa
 from sqlalchemy.orm.decl_api import DeclarativeMeta
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 from sessionize.utils.custom_types import Record
-from sessionize.utils.sa_orm import get_class, get_table
-from sessionize.utils.sa_orm import _get_table
+from sessionize.utils.sa_orm import get_class, _get_table
 
 
 def update_records_session(
@@ -48,3 +49,14 @@ def update_records_session(
         table_class = get_class(table_name, engine, schema=schema)
     mapper = sa.inspect(table_class)
     session.bulk_update_mappings(mapper, records)
+
+
+def update_records(
+    table: Union[sa.Table, str],
+    records: list[Record],
+    engine: Engine,
+    schema: Optional[str] = None,
+    table_class: Optional[DeclarativeMeta] = None
+) -> None:
+    with Session(engine) as session, session.begin():
+        update_records_session(table, records, session, schema, table_class)

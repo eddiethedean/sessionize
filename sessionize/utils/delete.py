@@ -2,6 +2,7 @@ from typing import Union
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
+from sqlalchemy.engine import Engine
 
 from sessionize.utils.sa_orm import _get_table
 
@@ -39,9 +40,27 @@ def delete_records_session(
     session.query(table).filter(col.in_(values)).delete(synchronize_session=False)
 
 
+def delete_records(
+    table: Union[sa.Table, str],
+    col_name: str,
+    values: list,
+    engine: Engine
+) -> None:
+    with Session(engine) as session, session.begin():
+        delete_records_session(table, col_name, values, session)
+
+
 def delete_all_records_session(
     table: Union[sa.Table, str],
     session: Session
 ) -> None:
     table = _get_table(table, session)
     session.query(table).delete()
+
+
+def delete_all_records(
+    table: Union[sa.Table, str],
+    engine: Engine
+) -> None:
+    with Session(engine) as session, session.begin():
+        delete_all_records_session(table, session)

@@ -7,8 +7,6 @@ from sessionize.utils.delete import delete_records_session
 from sessionize.utils.insert import insert_records_session
 from sessionize.utils.update import update_records_session
 from sessionize.utils.sa_orm import get_table
-
-
 from sessionize.utils.custom_types import Record
 
 
@@ -25,8 +23,8 @@ class SessionTable:
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, traceback):
-        if type:
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type:
             self.session.rollback()
         else:
             self.commit()
