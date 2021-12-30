@@ -20,12 +20,13 @@ def _get_table_name(
 
 def _get_table(
     table_name: Union[str, sa.Table],
-    engine: Engine
+    engine: Engine,
+    schema: Optional[str] = None
 ) -> sa.Table:
     if isinstance(table_name, sa.Table):
         return table_name
     if isinstance(table_name, str):
-        return get_table(table_name, engine)
+        return get_table(table_name, engine, schema=schema)
 
 
 def primary_keys(table: sa.Table) -> list[str]:
@@ -132,14 +133,17 @@ def get_class(
         reflect = connection.connection()
     else:
         reflect = connection
-        
-    metadata.reflect(reflect, only=[name])
+    
+    metadata.reflect(reflect, only=[name], schema=schema)
     Base = automap_base(metadata=metadata)
     Base.prepare()
     return Base.classes[name]
 
 
-def get_column(table: sa.Table, column_name: str) -> sa.Column:
+def get_column(
+    table: str,
+    column_name: str
+) -> sa.Column:
     return table.c[column_name]
 
 

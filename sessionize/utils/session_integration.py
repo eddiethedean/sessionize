@@ -10,7 +10,8 @@ from sessionize.utils.sa_orm import _get_table
 def insert_update_records_session(
     table: Union[sa.Table, str],
     records: list[Record],
-    session: Session
+    session: Session,
+    schema: Optional[str] = None
 ) -> None:
     """
     Insert new records and update existing records in sql table.

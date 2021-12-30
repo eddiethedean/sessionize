@@ -11,18 +11,18 @@ from sessionize.exceptions import ForceFail
 # delete_record_session
 class TestDeleteRecords(unittest.TestCase):
 
-    def delete_records(self, setup_function):
-        engine, table = setup_function()
+    def delete_records(self, setup_function, schema=None):
+        engine, table = setup_function(schema=schema)
         
         with Session(engine) as session, session.begin():
-            delete_records_session(table, 'id', [2, 3], session)
+            delete_records_session(table, 'id', [2, 3], session, schema=schema)
 
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17},
             {'id': 4, 'name': 'Noah', 'age': 20}
         ]
 
-        results = select_records(table, engine)
+        results = select_records(table, engine, schema=schema)
 
         self.assertEqual(results, expected)
 
@@ -32,12 +32,15 @@ class TestDeleteRecords(unittest.TestCase):
     def test_delete_records_postgres(self):
         self.delete_records(postgres_setup)
 
-    def delete_records_session_fails(self, setup_function):
-        engine, table = setup_function()
+    def test_delete_records_schema(self):
+        self.delete_records(postgres_setup, schema='local')
+
+    def delete_records_session_fails(self, setup_function, schema=None):
+        engine, table = setup_function(schema=schema)
         
         try:
             with Session(engine) as session, session.begin():
-                delete_records_session(table, 'id', [1, 2], session)
+                delete_records_session(table, 'id', [1, 2], session, schema=schema)
                 raise ForceFail
         except ForceFail:
             pass
@@ -49,7 +52,7 @@ class TestDeleteRecords(unittest.TestCase):
             {'id': 4, 'name': 'Noah', 'age': 20},
         ]
 
-        results = select_records(table, engine)
+        results = select_records(table, engine, schema=schema)
 
         self.assertEqual(results, expected)
 
@@ -58,3 +61,6 @@ class TestDeleteRecords(unittest.TestCase):
 
     def test_delete_records_session_fails_postgres(self):
         self.delete_records_session_fails(postgres_setup)
+
+    def test_delete_records_session_fails_schema(self):
+        self.delete_records_session_fails(postgres_setup, schema='local')

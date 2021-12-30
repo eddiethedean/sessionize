@@ -4,6 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.schema import DropTable, CreateTable
 from sqlalchemy.engine import Engine
 from sessionize.utils.type_convert import _type_convert
+from sessionize.utils.sa_orm import get_table
 
 
 def create_table(
@@ -14,8 +15,8 @@ def create_table(
     engine: Engine,
     schema: Optional[str] = None,
     autoincrement: Optional[bool] = True,
-    if_exists: Optional[str] = 'replace'
-) -> None:
+    if_exists: Optional[str] = 'error'
+) -> sa.Table:
     
     cols = []
     
@@ -36,3 +37,4 @@ def create_table(
         engine.execute(drop_table_sql)
     table_creation_sql = CreateTable(table)
     engine.execute(table_creation_sql)
+    return get_table(table_name, engine, schema=schema)

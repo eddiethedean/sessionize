@@ -8,12 +8,11 @@ from sessionize.exceptions import ForceFail
 from sessionize.utils.insert import insert_records_session
 
 
-
 # insert_df_session
 class TestInsertRecords(unittest.TestCase):
 
-    def insert_records(self, setup_function):
-        engine, table = setup_function()
+    def insert_records(self, setup_function, schema=None):
+        engine, table = setup_function(schema=schema)
 
         new_people = [
             {'name': 'Odos', 'age': 35},
@@ -21,7 +20,7 @@ class TestInsertRecords(unittest.TestCase):
         ]
         
         with Session(engine) as session, session.begin():
-            insert_records_session(table, new_people, session)
+            insert_records_session(table, new_people, session, schema=schema)
 
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17},
@@ -32,7 +31,7 @@ class TestInsertRecords(unittest.TestCase):
             {'id': 6, 'name': 'Kayla', 'age': 28}
         ]
 
-        results = select_records(table, engine)
+        results = select_records(table, engine, schema=schema)
 
         self.assertEqual(results, expected)
 
@@ -42,7 +41,10 @@ class TestInsertRecords(unittest.TestCase):
     def test_insert_records_postgres(self):
         self.insert_records(postgres_setup)
 
-    def insert_records_session_fails(self, setup_function):
+    def test_insert_records_schema(self):
+        self.insert_records(postgres_setup, schema='local')
+
+    def insert_records_session_fails(self, setup_function, schema=None):
         engine, table = setup_function()
 
         new_people = [
@@ -52,7 +54,7 @@ class TestInsertRecords(unittest.TestCase):
         
         try:
             with Session(engine) as session, session.begin():
-                insert_records_session(table, new_people, session)
+                insert_records_session(table, new_people, session, schema=schema)
                 raise ForceFail
         except ForceFail:
             pass
@@ -64,7 +66,7 @@ class TestInsertRecords(unittest.TestCase):
             {'id': 4, 'name': 'Noah', 'age': 20},
         ]
 
-        results = select_records(table, engine)
+        results = select_records(table, engine, schema=schema)
 
         self.assertEqual(results, expected)
 
@@ -74,4 +76,6 @@ class TestInsertRecords(unittest.TestCase):
     def test_insert_records_session_fails_postgres(self):
         self.insert_records_session_fails(postgres_setup)
 
+    def test_insert_records_session_fails_schema(self):
+        self.insert_records_session_fails(postgres_setup, schema='local')
     

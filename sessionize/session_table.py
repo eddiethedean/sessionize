@@ -38,19 +38,19 @@ class SessionTable:
         self.session.commit()
 
     def insert_records(self, records: list[Record]) -> None:
-        insert_records_session(self.get_sa_table(), records, self.session)
+        insert_records_session(self.get_sa_table(), records, self.session, schema=self.schema)
 
     def insert_one_record(self, record: Record) -> None:
         self.insert_records([record])
 
     def update_records(self, records: list[Record]) -> None:
-        update_records_session(self.get_sa_table(), records, self.session)
+        update_records_session(self.get_sa_table(), records, self.session, schema=self.schema)
 
     def update_one_record(self, record: Record) -> None:
         self.update_records([record])
 
     def delete_records(self, column_name: str, values: list[Any]) -> None:
-        delete_records_session(self.get_sa_table(), column_name, values, self.session)
+        delete_records_session(self.get_sa_table(), column_name, values, self.session, schema=self.schema)
 
     def delete_one_record(self, column_name: str, value: Any) -> None:
         self.delete_records(column_name, [value])

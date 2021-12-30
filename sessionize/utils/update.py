@@ -43,7 +43,7 @@ def update_records_session(
     None
     """
     engine = session.get_bind()
-    table = _get_table(table, engine)
+    table = _get_table(table, engine, schema=schema)
     table_name = table.name
     if table_class is None:
         table_class = get_class(table_name, engine, schema=schema)

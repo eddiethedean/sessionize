@@ -16,8 +16,8 @@ from sessionize.utils.delete import delete_records_session
 
 
 class TestCombined(unittest.TestCase):
-    def insert_update(self, setup_function):
-        engine, table = setup_function()
+    def insert_update(self, setup_function, schema=None):
+        engine, table = setup_function(schema=schema)
 
         new_people = [
             {'name': 'Odos', 'age': 35},
@@ -30,8 +30,8 @@ class TestCombined(unittest.TestCase):
         ]
         
         with Session(engine) as session, session.begin():
-            insert_records_session(table, new_people, session)
-            update_records_session(table, new_ages, session)
+            insert_records_session(table, new_people, session, schema=schema)
+            update_records_session(table, new_ages, session, schema=schema)
 
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17},
@@ -42,18 +42,21 @@ class TestCombined(unittest.TestCase):
             {'id': 6, 'name': 'Kayla', 'age': 28}
         ]
 
-        results = select_records(table, engine)
+        results = select_records(table, engine, schema=schema)
 
         self.assertEqual(results, expected)
 
     def test_insert_update_sqlite(self):
         self.insert_update(sqlite_setup)
 
-    def test_insert_update_psotgres(self):
+    def test_insert_update_postgres(self):
         self.insert_update(postgres_setup)
 
-    def delete_update_fail(self, setup_function):
-        engine, table = setup_function()
+    def test_insert_update_schema(self):
+        self.insert_update(postgres_setup, schema='local')
+
+    def delete_update_fail(self, setup_function, schema=None):
+        engine, table = setup_function(schema=schema)
 
         new_ages = [
             {'id': 2, 'name': 'Liam', 'age': 19},
@@ -62,8 +65,8 @@ class TestCombined(unittest.TestCase):
 
         try:
             with Session(engine) as session, session.begin():
-                delete_records_session(table, 'id', [2, 3], session)
-                update_records_session(table, new_ages, session)
+                delete_records_session(table, 'id', [2, 3], session, schema=schema)
+                update_records_session(table, new_ages, session, schema=schema)
         except:
             pass
 
@@ -74,7 +77,7 @@ class TestCombined(unittest.TestCase):
             {'id': 4, 'name': 'Noah', 'age': 20},
         ]
 
-        results = select_records(table, engine)
+        results = select_records(table, engine, schema=schema)
 
         self.assertEqual(results, expected)
 
@@ -84,8 +87,11 @@ class TestCombined(unittest.TestCase):
     def test_delete_update_fail_postgres(self):
         self.delete_update_fail(postgres_setup)
 
-    def update_delete(self, setup_function):
-        engine, table = setup_function()
+    def test_delete_update_fail_schema(self):
+        self.delete_update_fail(postgres_setup, schema='local')
+
+    def update_delete(self, setup_function, schema=None):
+        engine, table = setup_function(schema=schema)
 
         new_ages = [
             {'id': 2, 'name': 'Liam', 'age': 19},
@@ -93,15 +99,15 @@ class TestCombined(unittest.TestCase):
         ]
 
         with Session(engine) as session, session.begin():
-            update_records_session(table, new_ages, session)
-            delete_records_session(table, 'id', [2, 3], session)
+            update_records_session(table, new_ages, session, schema=schema)
+            delete_records_session(table, 'id', [2, 3], session, schema=schema)
             
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17},
             {'id': 4, 'name': 'Noah', 'age': 20},
         ]
 
-        results = select_records(table, engine)
+        results = select_records(table, engine, schema=schema)
 
         self.assertEqual(results, expected)
 
@@ -111,8 +117,11 @@ class TestCombined(unittest.TestCase):
     def test_update_delete_postgres(self):
         self.update_delete(postgres_setup)
 
-    def delete_insert_update(self, setup_function):
-        engine, table = setup_function()
+    def test_update_delete_schema(self):
+        self.update_delete(postgres_setup, schema='local')
+
+    def delete_insert_update(self, setup_function, schema=None):
+        engine, table = setup_function(schema=schema)
 
         new_people = [
             {'name': 'Odos', 'age': 35},
@@ -125,9 +134,9 @@ class TestCombined(unittest.TestCase):
         ]
 
         with Session(engine) as session, session.begin():
-            delete_records_session(table, 'id', [2, 3], session)
-            insert_records_session(table, new_people, session)
-            update_records_session(table, new_ages, session)
+            delete_records_session(table, 'id', [2, 3], session, schema=schema)
+            insert_records_session(table, new_people, session, schema=schema)
+            update_records_session(table, new_ages, session, schema=schema)
             
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 18},
@@ -136,7 +145,7 @@ class TestCombined(unittest.TestCase):
             {'id': 6, 'name': 'Kayla', 'age': 28}
         ]
 
-        results = select_records(table, engine)
+        results = select_records(table, engine, schema=schema)
 
         self.assertEqual(results, expected)
 
@@ -145,3 +154,6 @@ class TestCombined(unittest.TestCase):
 
     def test_delete_insert_update_postgres(self):
         self.delete_insert_update(postgres_setup)
+
+    def test_delete_insert_update_schema(self):
+        self.delete_insert_update(postgres_setup, schema='local')

@@ -10,11 +10,11 @@ from sessionize.utils.update import update_records_session
 
 # update_df_session
 class TestUpdateRecords(unittest.TestCase):
-    def update_records(self, setup_function):
+    def update_records(self, setup_function, schema=None):
         """
         Test that update_record_sesssion works
         """
-        engine, table = setup_function()
+        engine, table = setup_function(schema=schema)
 
         new_ages = [
             {'id': 2, 'name': 'Liam', 'age': 19},
@@ -22,7 +22,7 @@ class TestUpdateRecords(unittest.TestCase):
         ]
         
         with Session(engine) as session, session.begin():
-            update_records_session(table, new_ages, session)
+            update_records_session(table, new_ages, session, schema=schema)
 
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17},
@@ -31,7 +31,7 @@ class TestUpdateRecords(unittest.TestCase):
             {'id': 4, 'name': 'Noah', 'age': 20},
         ]
 
-        results = select_records(table, engine)
+        results = select_records(table, engine, schema=schema)
         self.assertEqual(results, expected)
 
     def test_update_records_sqlite(self):
@@ -39,3 +39,6 @@ class TestUpdateRecords(unittest.TestCase):
 
     def test_update_records_postgres(self):
         self.update_records(postgres_setup)
+
+    def test_update_records_schema(self):
+        self.update_records(postgres_setup, schema='local')

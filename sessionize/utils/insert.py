@@ -11,28 +11,30 @@ from sessionize.utils.sa_orm import get_class, _get_table
 def insert_from_table_session(
     table1: Union[sa.Table, str],
     table2: Union[sa.Table, str],
-    session: sa.orm.Session
+    session: sa.orm.Session,
+    schema: Optional[str] = None,
 ) -> None:
     """
     Inserts all records from table1 into table2.
     Only add inserts to session. Does not execute.
     """
-    table1 = _get_table(table1, session)
-    table2 = _get_table(table2, session)
+    table1 = _get_table(table1, session, schema=schema)
+    table2 = _get_table(table2, session, schema=schema)
     session.execute(table2.insert().from_select(table1.columns.keys(), table1))
 
 
 def insert_from_table(
     table1: Union[sa.Table, str],
     table2: Union[sa.Table, str],
-    engine: sa.engine.Engine
+    engine: sa.engine.Engine,
+    schema: Optional[str] = None,
 ) -> None:
     """
     Inserts all records from table1 into table2.
     Executes inserts.
     """
-    table1 = _get_table(table1, engine)
-    table2 = _get_table(table2, engine)
+    table1 = _get_table(table1, engine, schema=schema)
+    table2 = _get_table(table2, engine, schema=schema)
     with sessionmaker(engine).begin() as session:
         insert_from_table_session(table1, table2, session)
 
@@ -70,7 +72,7 @@ def insert_records_session(
     None
     """
     engine = session.get_bind()
-    table = _get_table(table, engine)
+    table = _get_table(table, engine, schema=schema)
     table_name = table.name
 
     if table_class is None:
@@ -86,6 +88,6 @@ def insert_records(
     schema: Optional[str] = None,
     table_class: Optional[DeclarativeMeta] = None
 ) -> None:
-    table = _get_table(table, engine)
+    table = _get_table(table, engine, schema=schema)
     with sessionmaker(engine).begin() as session:
         insert_records_session(table, records, session, schema, table_class)

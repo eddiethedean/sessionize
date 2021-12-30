@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
@@ -11,7 +11,8 @@ def delete_records_session(
     table: Union[sa.Table, str],
     col_name: str,
     values: list,
-    session: Session
+    session: Session,
+    schema: Optional[str] = None
 ) -> None:
     """
     Given a SqlAlchemy Table, name of column to compare,
@@ -35,7 +36,7 @@ def delete_records_session(
     -------
     None
     """
-    table = _get_table(table, session)
+    table = _get_table(table, session, schema=schema)
     col = table.c[col_name]
     session.query(table).filter(col.in_(values)).delete(synchronize_session=False)
 
@@ -44,23 +45,26 @@ def delete_records(
     table: Union[sa.Table, str],
     col_name: str,
     values: list,
-    engine: Engine
+    engine: Engine,
+    schema: Optional[str] = None
 ) -> None:
     with Session(engine) as session, session.begin():
-        delete_records_session(table, col_name, values, session)
+        delete_records_session(table, col_name, values, session, schema=schema)
 
 
 def delete_all_records_session(
     table: Union[sa.Table, str],
-    session: Session
+    session: Session,
+    schema: Optional[str] = None
 ) -> None:
-    table = _get_table(table, session)
+    table = _get_table(table, session, schema=schema)
     session.query(table).delete()
 
 
 def delete_all_records(
     table: Union[sa.Table, str],
-    engine: Engine
+    engine: Engine,
+    schema: Optional[str] = None
 ) -> None:
     with Session(engine) as session, session.begin():
-        delete_all_records_session(table, session)
+        delete_all_records_session(table, session, schema=schema)

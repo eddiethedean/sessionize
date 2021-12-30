@@ -11,7 +11,8 @@ from sessionize.utils.custom_types import Record, SqlConnection
 def select_records(
     table: Union[sa.Table, str],
     connection: SqlConnection,
-    chunksize: Optional[int] = None
+    chunksize: Optional[int] = None,
+    schema: Optional[str] = None
 ) -> Union[list[Record], Generator[list[Record], None, None]]:
     """
     Queries database for records in table.
@@ -31,7 +32,7 @@ def select_records(
     -------
     list of sql table records or generator of lists of records.
     """
-    table = _get_table(table, connection)
+    table = _get_table(table, connection, schema=schema)
     if chunksize is None:
         return select_records_all(table, connection)
     else:
@@ -40,7 +41,8 @@ def select_records(
 
 def select_records_all(
     table: Union[sa.Table, str],
-    connection: SqlConnection
+    connection: SqlConnection,
+    schema: Optional[str] = None
 ) -> list[Record]:
     """
     Queries database for records in table.
@@ -57,7 +59,7 @@ def select_records_all(
     -------
     list of sql table records.
     """
-    table = _get_table(table, connection)
+    table = _get_table(table, connection, schema=schema)
     query = select(table).order_by(*table.primary_key.columns.values())
     results = connection.execute(query)
     return [dict(r) for r in results]
@@ -66,7 +68,8 @@ def select_records_all(
 def select_records_chunks(
     table: Union[sa.Table, str],
     connection: SqlConnection,
-    chunksize: int = 2
+    chunksize: int = 2,
+    schema: Optional[str] = None
 ) -> Generator[list[Record], None, None]:
     """
     Queries database for records in table.
@@ -85,7 +88,7 @@ def select_records_chunks(
     -------
     Generator of lists of sql table records.
     """
-    table = _get_table(table, connection)
+    table = _get_table(table, connection, schema=schema)
     query = select(table).order_by(*table.primary_key.columns.values())
     stream = connection.execute(query, execution_options={'stream_results': True})
     for results in stream.partitions(chunksize):
@@ -96,7 +99,8 @@ def select_existing_values(
     table: Union[sa.Table, str],
     column_name: str,
     values: list,
-    conection: SqlConnection
+    conection: SqlConnection,
+    schema: Optional[str] = None
 ) -> list:
     """
     Queries database for existing values in table column.
@@ -116,7 +120,7 @@ def select_existing_values(
     -------
     List of matching values.
     """
-    table = _get_table(table, conection)
+    table = _get_table(table, conection, schema=schema)
     column = get_column(table, column_name)
     query = select([column]).where(column.in_(values))
     return conection.execute(query).scalars().fetchall()
@@ -126,7 +130,8 @@ def select_column_values(
     table: Union[sa.Table, str],
     column_name: str,
     connection: SqlConnection,
-    chunksize: Optional[int] = None
+    chunksize: Optional[int] = None,
+    schema: Optional[str] = None
 ) -> Union[list, Generator[list, None, None]]:
     """
     Queries database for vaules in sql table column.
@@ -149,7 +154,7 @@ def select_column_values(
     -------
     list of sql table column values or generator of lists of values.
     """
-    table = _get_table(table, connection)
+    table = _get_table(table, connection, schema=schema)
     if chunksize is None:
         return select_column_values_all(table, column_name, connection)
     else:
@@ -160,6 +165,7 @@ def select_column_values_all(
     table: Union[sa.Table, str],
     column_name: str,
     connection: SqlConnection,
+    schema: Optional[str] = None
 ) -> list:
     """
     Queries database for vaules in sql table column.
@@ -179,7 +185,7 @@ def select_column_values_all(
     -------
     list of sql table column values.
     """
-    table = _get_table(table, connection)
+    table = _get_table(table, connection, schema=schema)
     query = select(table.c[column_name])
     return connection.execute(query).scalars().all()
 
@@ -188,7 +194,8 @@ def select_column_values_chunks(
     table: Union[sa.Table, str],
     column_name: str,
     connection: SqlConnection,
-    chunksize: int
+    chunksize: int,
+    schema: Optional[str] = None
 ) -> Generator[list, None, None]:
     """
     Queries database for vaules in sql table column.
@@ -209,7 +216,7 @@ def select_column_values_chunks(
     -------
     Generator of chunksized lists of sql table column values.
     """
-    table = _get_table(table, connection)
+    table = _get_table(table, connection, schema=schema)
     query = select(table.c[column_name])
     stream = connection.execute(query, execution_options={'stream_results': True})
     for results in stream.scalars().partitions(chunksize):
