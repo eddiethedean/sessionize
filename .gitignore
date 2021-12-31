@@ -4,7 +4,7 @@ worksheet_functions/
 sessionize.egg-info/
 sessionize/__pycache__/
 dist/
-data/test.db
+data/
 build/
 .vscode/
 .ipynb_checkpoints/
