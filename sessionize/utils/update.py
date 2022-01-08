@@ -1,7 +1,6 @@
 from typing import Optional, Union
 
 import sqlalchemy as sa
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -13,8 +12,7 @@ def update_records_session(
     table: Union[sa.Table, str],
     records: list[Record],
     session: sa.orm.session.Session,
-    schema: Optional[str] = None,
-    table_class: Optional[DeclarativeMeta] = None
+    schema: Optional[str] = None
 ) -> None:
     """
     Update sql table records from list records.
@@ -45,8 +43,7 @@ def update_records_session(
     engine = session.get_bind()
     table = _get_table(table, engine, schema=schema)
     table_name = table.name
-    if table_class is None:
-        table_class = get_class(table_name, engine, schema=schema)
+    table_class = get_class(table_name, engine, schema=schema)
     mapper = sa.inspect(table_class)
     session.bulk_update_mappings(mapper, records)
 
@@ -55,8 +52,7 @@ def update_records(
     table: Union[sa.Table, str],
     records: list[Record],
     engine: Engine,
-    schema: Optional[str] = None,
-    table_class: Optional[DeclarativeMeta] = None
+    schema: Optional[str] = None
 ) -> None:
     with Session(engine) as session, session.begin():
-        update_records_session(table, records, session, schema, table_class)
+        update_records_session(table, records, session, schema)

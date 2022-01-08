@@ -3,9 +3,11 @@ from typing import Optional, Any, Union, Generator
 
 import sqlalchemy as sa
 from sqlalchemy.sql import select
+from sqlalchemy.sql.elements import and_, or_
 
-from sessionize.utils.sa_orm import get_column, _get_table
+from sessionize.utils.sa_orm import get_column, _get_table, get_row_count, primary_keys
 from sessionize.utils.custom_types import Record, SqlConnection
+from sessionize.exceptions import SliceError
 
 
 def select_records(
@@ -97,9 +99,9 @@ def select_records_chunks(
 
 def select_existing_values(
     table: Union[sa.Table, str],
+    conection: SqlConnection,
     column_name: str,
     values: list,
-    conection: SqlConnection,
     schema: Optional[str] = None
 ) -> list:
     """
@@ -128,8 +130,8 @@ def select_existing_values(
 
 def select_column_values(
     table: Union[sa.Table, str],
-    column_name: str,
     connection: SqlConnection,
+    column_name: str,
     chunksize: Optional[int] = None,
     schema: Optional[str] = None
 ) -> Union[list, Generator[list, None, None]]:
@@ -163,8 +165,8 @@ def select_column_values(
 
 def select_column_values_all(
     table: Union[sa.Table, str],
-    column_name: str,
     connection: SqlConnection,
+    column_name: str,
     schema: Optional[str] = None
 ) -> list:
     """
@@ -192,8 +194,8 @@ def select_column_values_all(
 
 def select_column_values_chunks(
     table: Union[sa.Table, str],
-    column_name: str,
     connection: SqlConnection,
+    column_name: str,
     chunksize: int,
     schema: Optional[str] = None
 ) -> Generator[list, None, None]:
@@ -221,3 +223,324 @@ def select_column_values_chunks(
     stream = connection.execute(query, execution_options={'stream_results': True})
     for results in stream.scalars().partitions(chunksize):
         yield results
+
+
+def _calc_positive_index(index: int, row_count: int) -> int:
+    # convert negative index to real index
+    if index < 0:
+        index = row_count + index
+    return index
+
+
+def _stop_overflow_index(index: int, row_count: int) -> int:
+    if index > row_count - 1:
+        return row_count
+    return index
+
+    
+def _stop_underflow_index(index: int, row_count: int) -> int:
+    if index < 0 and index < -row_count:
+        return 0
+    return index
+
+
+def _convert_slice_indexes(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    start: Optional[int] = None,
+    stop: Optional[int] = None,
+    schema: Optional[str] = None
+) -> tuple[int, int]:
+    table = _get_table(table, connection, schema=schema)
+    # start index is 0 if None
+    start = 0 if start is None else start
+    row_count = get_row_count(table, connection)
+    
+    # stop index is row count if None
+    stop = row_count if stop is None else stop
+    # convert negative indexes
+    start = _calc_positive_index(start, row_count)
+    start = _stop_underflow_index(start, row_count)
+    stop = _calc_positive_index(stop, row_count)
+    stop = _stop_overflow_index(stop, row_count)
+
+    if row_count == 0:
+        return 0, 0
+
+    return start, stop
+
+
+def select_records_slice(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    start: Optional[int] = None,
+    stop: Optional[int] = None,
+    schema: Optional[str] = None
+) -> list[Record]:
+    """
+
+    start: Starting index where the slicing of table records starts.
+    stop: Ending index where the slicing of table records stops. Non-inclusive.
+
+    The index is not necessarily the primary key value.
+    0 is always the first record's index.
+    -1 is always the last record's index.
+
+    start is optional, is 0 if None
+    stop is optional, is the last index + 1 if None.
+
+    """
+    table = _get_table(table, connection, schema=schema)
+    start, stop = _convert_slice_indexes(table, connection, start, stop)
+    if stop < start:
+        raise SliceError('stop cannot be less than start.')
+    query = select(table).order_by(*table.primary_key.columns.values()).slice(start, stop)
+    results = connection.execute(query)
+    return [dict(r) for r in results]
+
+
+def select_record_by_index(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    index: int,
+    schema: Optional[str] = None
+) -> Record:
+    """
+    Select a record by index.
+    """
+    table = _get_table(table, connection, schema=schema)
+    if index < 0:
+        row_count = get_row_count(table, connection)
+        if index < -row_count:
+            raise IndexError('Index out of range.') 
+        index = _calc_positive_index(index, row_count)
+    records = select_records_slice(table, connection, index, index+1)
+    if len(records) == 0:
+        raise IndexError('Index out of range.')
+    return records[0]
+
+
+def select_first_record(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    schema: Optional[str] = None
+) -> Union[dict, None]:
+    """
+    Select first record in table
+    Returns dictionary or
+    Returns None if table is empty
+    """
+    table = _get_table(table, connection, schema=schema)
+    for chunk in select_records(table, connection, chunksize=1):
+        return chunk[0]
+    return None
+
+
+def select_column_values_by_slice(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    column_name: str,
+    start: Optional[int] = None,
+    stop: Optional[int] = None,
+    schema: Optional[str] = None
+) -> list:
+    """
+    Select a subset of column values by slice.
+    """
+    table = _get_table(table, connection, schema=schema)
+    start, stop = _convert_slice_indexes(table, connection, start, stop)
+    if stop < start:
+        raise SliceError('stop cannot be less than start.')
+    query = select(table.c[column_name]).slice(start, stop)
+    return connection.execute(query).scalars().all()
+
+
+def select_column_value_by_index(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    column_name: str,
+    index: int,
+    schema: Optional[str] = None
+) -> Any:
+    """
+    Select a column value by index.
+    """
+    table = _get_table(table, connection, schema=schema)
+    if index < 0:
+        row_count = get_row_count(table, connection)
+        if index < -row_count:
+            raise IndexError('Index out of range.') 
+        index = _calc_positive_index(index, row_count)
+    query = select(table.c[column_name]).slice(index, index+1)
+    return connection.execute(query).scalars().all()[0]
+
+
+def select_primary_key_records_by_slice(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    _slice: slice,
+    schema: Optional[str] = None
+) -> list:
+    """
+    Select primary key values by slice.
+    """
+    start = _slice[0]
+    stop = _slice[1]
+    table = _get_table(table, connection, schema=schema)
+    start, stop = _convert_slice_indexes(table, connection, start, stop)
+    if stop < start:
+        raise SliceError('stop cannot be less than start.')
+    query = select(table.primary_key.columns.values()).order_by(*table.primary_key.columns.values()).slice(start, stop)
+    results = connection.execute(query)
+    return [dict(r) for r in results]
+
+
+def select_primary_key_record_by_index(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    index: int,
+    schema: Optional[str] = None
+) -> Record:
+    """
+    Select primary key values by index.
+    """
+    table = _get_table(table, connection, schema=schema)
+    if index < 0:
+        row_count = get_row_count(table, connection)
+        if index < -row_count:
+            raise IndexError('Index out of range.') 
+        index = _calc_positive_index(index, row_count)
+    return select_primary_key_records_by_slice(table, connection, index, index+1)[0]
+
+
+def check_slice_primary_keys_match(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    start: int,
+    stop: int,
+    records: list[Record],
+    schema: Optional[str] = None
+) -> bool:
+    """
+    Check if records have matching primary key values to slice of table records
+    """
+    table = _get_table(table, connection, schema=schema)
+    slice_key_values = select_primary_key_records_by_slice(table, connection, start, stop)
+    keys = primary_keys(table)
+    records_key_values = [{key:record[key] for key in keys} for record in records]
+
+    if len(slice_key_values) != len(records_key_values):
+        return False
+
+    for slice_key_value in slice_key_values:
+        if slice_key_value not in records_key_values:
+            return False
+
+    return True
+
+
+def check_index_keys_match(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    index: int,
+    record: Record,
+    schema: Optional[str] = None
+) -> bool:
+    """
+    Check if record's primary key values match index table record.
+    """
+    table = _get_table(table, connection, schema=schema)
+    keys = primary_keys(table)
+    key_record = select_primary_key_record_by_index(table, index, connection)
+    return {key:record[key] for key in keys} == key_record
+
+
+def select_record_by_primary_key(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    primary_key_values: Record,
+    schema: Optional[str] = None
+) -> list[Record]:
+    """
+    Select a record by primary key values
+    """
+    table = _get_table(table, connection, schema=schema)
+    keys = primary_keys(table)
+    if set(primary_key_values.keys()) != set(keys):
+        raise KeyError('primary_key_values must have values for all primary keys.')
+
+    where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_values.items()]
+
+    query = select(table).where((and_(*where_clause)))
+    results = connection.execute(query)
+    return [dict(r) for r in results]
+
+
+def select_records_by_primary_keys(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    primary_key_values: list[Record],
+    schema: Optional[str] = None
+) -> list[Record]:
+    """
+    Select the records that match the primary key values
+    """
+    table = _get_table(table, connection, schema=schema)
+    keys = primary_keys(table)
+    for record in primary_key_values:
+        if set(record.keys()) != set(keys):
+            raise KeyError('primary_key_values must have values for all primary keys.')
+
+    where_clauses = []
+    for record in primary_key_values:
+        where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
+        where_clauses.append(and_(*where_clause))
+
+    query = select(table).where((or_(*where_clauses)))
+    results = connection.execute(query)
+    return [dict(r) for r in results]
+
+
+def select_column_values_by_primary_keys(
+    table: sa.Table,
+    connection: SqlConnection,
+    column_name: str,
+    primary_key_values: list[Record]
+) -> list:
+    """
+    Select multiple values from a column by primary key values
+    """
+    keys = primary_keys(table)
+    for record in primary_key_values:
+        if set(record.keys()) != set(keys):
+            raise KeyError('primary_key_values must have values for all primary keys.')
+
+    where_clauses = []
+    for record in primary_key_values:
+        where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
+        where_clauses.append(and_(*where_clause))
+
+    query = select(table.c[column_name]).where((or_(*where_clauses)))
+    results = connection.execute(query)
+    return results.scalars().fetchall()
+
+
+def select_value_by_primary_keys(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    column_name: str,
+    primary_key_values: Record,
+    schema: Optional[str] = None
+) -> Any:
+    """
+    Select a single value from a column by primary key values
+    """
+    table = _get_table(table, connection, schema=schema)
+    keys = primary_keys(table)
+    if set(primary_key_values.keys()) != set(keys):
+        raise KeyError('primary_key_values must have values for all primary keys.')
+
+    where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_values.items()]
+
+    query = select(table.c[column_name]).where((and_(*where_clause)))
+    return connection.execute(query).scalars().all()[0]

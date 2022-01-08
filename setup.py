@@ -7,7 +7,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="sessionize",
-    version="0.0.6",
+    version="0.0.7",
     description="Make changes to sql tables using SqlAlchmey sessions",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -23,5 +23,5 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     python_requires='>=3.9',
-    install_requires=['sqlalchemy', 'alembic']
+    install_requires=['SQLAlchemy==1.4.29', 'alembic==1.7.5']
 )

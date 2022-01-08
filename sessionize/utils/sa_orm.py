@@ -3,7 +3,6 @@ from typing import Optional, Union
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql.schema import PrimaryKeyConstraint
 
 from sessionize.utils.custom_types import SqlConnection
@@ -107,7 +106,7 @@ def get_class(
     name: str,
     connection: SqlConnection,
     schema: Optional[str] = None
-) -> DeclarativeMeta:
+):
     """
     Maps a SqlAlchemy table class to a sql table.
     Returns the mapped class object.
@@ -158,3 +157,20 @@ def get_primary_key_constraints(
     for con in cons:
         if isinstance(con, PrimaryKeyConstraint):
             return con.name, [col.name for col in con.columns]
+
+
+def get_column_types(table) -> dict[str, sa.sql.sqltypes]:
+    """Returns dict of table column names:sql_type
+    """
+    return {c.name: c.type for c in table.c}
+
+
+def get_column_names(table) -> list[str]:
+    return [c.name for c in table.columns]
+
+
+def get_row_count(table, session) -> int:
+    col_name = get_column_names(table)[0]
+    col = get_column(table, col_name)
+    return session.execute(sa.func.count(col)).scalar()
+

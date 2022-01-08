@@ -3,3 +3,6 @@ class ForceFail(Exception):
 
 class MissingPrimaryKey(Exception):
     pass
+
+class SliceError(IndexError):
+    pass

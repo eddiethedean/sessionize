@@ -2,7 +2,7 @@ import unittest
 
 from sqlalchemy.orm import Session
 
-from sessionize.setup_test import sqlite_setup, postgres_setup
+from sessionize.utils.setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 from sessionize.utils.insert import insert_records_session

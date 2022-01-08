@@ -3,8 +3,10 @@ from typing import Union, Optional
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 from sqlalchemy.engine import Engine
+from sqlalchemy.sql.elements import and_, or_
 
 from sessionize.utils.sa_orm import _get_table
+from sessionize.utils.custom_types import Record
 
 
 def delete_records_session(
@@ -39,6 +41,33 @@ def delete_records_session(
     table = _get_table(table, session, schema=schema)
     col = table.c[col_name]
     session.query(table).filter(col.in_(values)).delete(synchronize_session=False)
+
+
+def delete_record_by_values_session(
+    table: Union[sa.Table, str],
+    record: Record,
+    session: Session,
+    schema: Optional[str] = None
+) -> None:
+    # Delete any records that match the given record values.
+    table = _get_table(table, session, schema=schema)
+    where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
+    session.query(table).where((and_(*where_clause))).delete(synchronize_session=False)
+
+
+def delete_records_by_values_session(
+    table: Union[sa.Table, str],
+    records: list[Record],
+    session: Session,
+    schema: Optional[str] = None
+) -> None:
+    # Delete any records that match the given records values.
+    table = _get_table(table, session, schema=schema)
+    where_clauses = []
+    for record in records:
+        where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
+        where_clauses.append(and_(*where_clause))
+    session.query(table).where((or_(*where_clause))).delete(synchronize_session=False)
 
 
 def delete_records(

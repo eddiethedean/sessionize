@@ -1,7 +1,6 @@
 from typing import Optional, Union
 
 import sqlalchemy as sa
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.orm.session import sessionmaker
 
 from sessionize.utils.custom_types import Record
@@ -43,8 +42,7 @@ def insert_records_session(
     table: Union[sa.Table, str],
     records: list[Record],
     session: sa.orm.Session,
-    schema: Optional[str] = None,
-    table_class: Optional[DeclarativeMeta] = None
+    schema: Optional[str] = None
 ) -> None:
     """
     Inserts list of records into sql table.
@@ -74,9 +72,7 @@ def insert_records_session(
     engine = session.get_bind()
     table = _get_table(table, engine, schema=schema)
     table_name = table.name
-
-    if table_class is None:
-        table_class = get_class(table_name, engine, schema=schema)
+    table_class = get_class(table_name, engine, schema=schema)
     mapper = sa.inspect(table_class)
     session.bulk_insert_mappings(mapper, records)
 
@@ -85,9 +81,8 @@ def insert_records(
     table: Union[sa.Table, str],
     records: list[Record],
     engine: sa.engine.Engine,
-    schema: Optional[str] = None,
-    table_class: Optional[DeclarativeMeta] = None
+    schema: Optional[str] = None
 ) -> None:
     table = _get_table(table, engine, schema=schema)
     with sessionmaker(engine).begin() as session:
-        insert_records_session(table, records, session, schema, table_class)
+        insert_records_session(table, records, session, schema)
