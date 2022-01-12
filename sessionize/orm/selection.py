@@ -21,6 +21,9 @@ from sessionize.utils.insert import insert_records_session
 from sessionize.utils.delete import delete_records_by_values_session
 from sessionize.utils.delete import delete_record_by_values_session
 
+from sessionize.orm.filter import Filter
+from sessionize.orm.selection_chaining import selection_chaining
+
 
 class Selection:
     def __init__(self, session_table):
@@ -29,7 +32,7 @@ class Selection:
         self.table_name = session_table.name
         self.sa_table = session_table.sa_table
 
-
+@selection_chaining
 class TableSelection(Selection):
     def __init__(self, session_table):
         Selection.__init__(self, session_table)
@@ -42,64 +45,33 @@ class TableSelection(Selection):
             # TableSelection[index] -> RecordSelection
             primary_key_values = self.get_primary_key_values()
             return RecordSelection(self.session_table, primary_key_values[key])
+
         if isinstance(key, slice):
             # TableSelection[slice] -> SubTableSelection
             _slice = key
             primary_key_values = self.get_primary_key_values()
-            if key.start is None and key.stop is None:
-                # TableSelection[:] -> TableSelection
-                return TableSelection(self.session_table)
-            else:
-                return SubTableSelection(self.session_table, primary_key_values[_slice])
+            return SubTableSelection(self.session_table, primary_key_values[_slice])
+
         if isinstance(key, str):
             # TableSelection[column_name] -> ColumnSelection
             column_name = key
             return ColumnSelection(self.session_table, column_name)
-        if isinstance(key, tuple):
-            # TableSelection[column_name, <index, slice, or filter>] -> ValueSelection or SubColumnSelection
-            if isinstance(key[0], str):
-                column_name = key[0]
-                primary_key_values = self.get_primary_key_values()
-                if isinstance(key[1], int):
-                    # TableSelection[column_name, index] -> ValueSelection
-                    index = key[1]
-                    return ValueSelection(self.session_table, column_name, primary_key_values[index])
-                if isinstance(key[1], slice):
-                    # TableSelection[column_name, slice] -> SubColumnSelection
-                    _slice = key[1]
-                    return SubColumnSelection(self.session_table, column_name, primary_key_values[_slice])
-                if isinstance(key[1], Iterable) and all(isinstance(item, bool) for item in key[1]):
-                    # TableSelection[column_name, filter] -> SubColumnSelection
-                    filter = key[1]
-                    primary_keys = self.get_primary_keys_by_filter(filter)
-                    return SubColumnSelection(self.session_table, column_name, primary_keys)
-            if isinstance(key[0], Iterable) and all(isinstance(item, str) for item in key):
-                # TableSelection[column_names, <index, slice, or filter>] -> SubRecordSelection or SubTableSubColumnSelection
-                column_names = key[0]
-                primary_key_values = self.get_primary_key_values()
-                if isinstance(key[1], int):
-                    # TableSelection[column_names, index] -> SubRecordSelection
-                    index = key[1]
-                    return SubRecordSelection(self.session_table, primary_key_values[index], column_names)
-                if isinstance(key[1], slice):
-                    # TableSelection[column_names, slice] -> SubTableSubColumnSelection
-                    _slice = key[1]
-                    return SubColumnSelection(self.session_table, column_name, primary_key_values[_slice])
-                if isinstance(key[1], Iterable) and all(isinstance(item, bool) for item in key[1]):
-                    # TableSelection[column_names, filter] -> SubTableSubColumnSelection
-                    filter = key[1]
-                    primary_keys = self.get_primary_keys_by_filter(filter)
-                    return SubColumnSelection(self.session_table, column_name, primary_keys)
 
+        # if isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+            
         if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
-            # TableSelection[Iterable[bool]]
+            # TableSelection[filter] -> SubTableSelection
             filter = key
             primary_keys = self.get_primary_keys_by_filter(filter)
             return SubTableSelection(self.session_table, primary_keys)
+
         if isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
-            # TableSelection[Iterable[str]]
+            # TableSelection[column_names] -> TableSubColumnSelection
             column_names = key
             return TableSubColumnSelection(self.session_table, column_names)
+
+        raise NotImplemented('TableSelection only supports selection by int, slice, str, Iterable[bool], and Iterable[str]')
 
     def __setitem__(self, key, value):
         if isinstance(key, int):
@@ -107,39 +79,34 @@ class TableSelection(Selection):
             index = key
             record_selection = self[index]
             record_selection.update(value)
-        if isinstance(key, slice):
+
+        elif isinstance(key, slice):
             # TableSelection[slice] = value
             _slice = key
             sub_table_selection = self[_slice]
             sub_table_selection.update(value)
-        if isinstance(key, str):
+
+        elif isinstance(key, str):
             # TableSelection[column_name] = value
             column_name = key
             sub_column_selection = self[column_name]
             sub_column_selection.update(value)
-        if isinstance(key, tuple):
-            # TableSelection[column_name, <index or slice>] = value
-            column_name = key[0]
-            if isinstance(key[1], int):
-                # TableSelection[column_name, index] = value
-                index = key[1]
-                value_selection = self[column_name, index]
-                value_selection.update(value)
-            if isinstance(key[1], slice):
-                # TableSelection[column_name, slice] = value
-                _slice = key[1]
-                sub_column_selection = self[column_name, _slice]
-                sub_column_selection.update(value)
-            if isinstance(key[1], Iterable) and all(isinstance(item, bool) for item in key[1]):
-                # TableSelection[column_name, Iterable[bool]] = value
-                filter = key[1]
-                sub_column_selection = self[column_name, filter]
-                sub_column_selection.update(value)
-        if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
+
+        # elif isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+
+        elif isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
             # TableSelection[Iterable[bool]] = value
             filter = key
             sub_table_selection = self[filter]
             sub_table_selection.update(value)
+
+        elif isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
+            # TableSelection[column_names] = value
+            raise NotImplemented('TableSubColumnSelection updating is not implemented.')
+
+        else:
+            raise NotImplemented('TableSelection only supports selection updating by int, slice, str, and Iterable[bool]')
 
     def __delitem__(self, key):
         if isinstance(key, int):
@@ -147,55 +114,50 @@ class TableSelection(Selection):
             index = key
             record_selection = self[index]
             record_selection.delete()
-        if isinstance(key, slice):
+
+        elif isinstance(key, slice):
             # del TableSelection[slice]
             _slice = key
             sub_table_selection = self[_slice]
             sub_table_selection.delete()
-        if isinstance(key, str):
+
+        elif isinstance(key, str):
             # del TableSelection[column_name]
             sub_column_selection = self[key]
             sub_column_selection.delete()
-        if isinstance(key, tuple):
-            # del TableSelection[column_name, <index or slice>]
-            column_name = key[0]
-            if isinstance(key[1], int):
-                # del TableSelection[column_name, index]
-                index = key[1]
-                value_selection = self[column_name, index]
-                value_selection.delete()
-            if isinstance(key[1], slice):
-                # del TableSelection[column_name, slice]
-                _slice = key[1]
-                sub_column_selection = self[column_name, _slice]
-                sub_column_selection.delete()
-            if isinstance(key[1], Iterable) and all(isinstance(item, bool) for item in key[1]):
-                # del TableSelection[column_name, Iterable[bool]]
-                filter = key[1]
-                sub_column_selection = self[column_name, filter]
-                sub_column_selection.delete()
-        if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
-            # del TableSelection[Iterable[bool]]
+
+        # elif isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+
+        elif isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
+            # del TableSelection[filter]
             filter = key
             sub_table_selection = self[filter]
             sub_table_selection.delete()
 
+        elif isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
+            # del TableSelection[column_names]
+            raise NotImplemented('TableSubColumnSelection deletion is not implemented.')
+
+        else:
+            raise NotImplemented('TableSelection only supports selection deletion by int, slice, str, and, Iterable[bool]')
+
     @property
-    def records(self):
+    def records(self) -> list:
         return select_records(self.sa_table, self.session)
 
-    def get_primary_keys_by_index(self, index: int):
+    def get_primary_keys_by_index(self, index: int) -> Record:
         return select_primary_key_record_by_index(self.sa_table, self.session, index)
 
-    def get_primary_keys_by_slice(self, _slice: slice):
+    def get_primary_keys_by_slice(self, _slice: slice) -> list[Record]:
         return select_primary_key_records_by_slice(self.sa_table, self.session, _slice)
 
     # TODO: select_primary_key_values_by_filter function
-    def get_primary_keys_by_filter(self, filter: Iterable[bool]):
+    def get_primary_keys_by_filter(self, filter: Iterable[bool]) -> list[Record]:
         primary_key_values = self.get_primary_key_values()
         return [record for record, b in zip(primary_key_values, filter) if b]
 
-    def get_primary_key_values(self):
+    def get_primary_key_values(self) -> list[Record]:
         return select_primary_key_values(self.sa_table, self.session)
 
     def update(self, records: list[Record]) -> None:
@@ -210,7 +172,7 @@ class TableSelection(Selection):
         # delete all records in sub table
         delete_records_by_values_session(self.sa_table, self.primary_key_values, self.session)
 
-
+@selection_chaining
 class TableSubColumnSelection(TableSelection):
     # returned when all records are selected but a subset of columns are selected
     def __init__(self, session_table, column_names: Iterable[str]):
@@ -226,54 +188,98 @@ class TableSubColumnSelection(TableSelection):
 
     def __getitem__(self, key):
         if isinstance(key, int):
-            # TableSubColumnSelection[index]
+            # TableSubColumnSelection[index] -> SubRecordSelection
             index = key
             primary_key_values = self.get_primary_key_values()
             return SubRecordSelection(self.session_table, primary_key_values[index], self.column_names)
+
         if isinstance(key, slice):
-            # TableSubColumnSelection[slice]
+            # TableSubColumnSelection[slice] -> SubTableSubColumnSelection
             _slice = key
             primary_key_values = self.get_primary_key_values()
-            if _slice.start is None and _slice.stop is None:
-                return TableSubColumnSelection(self.session_table, self.column_names)
-            else:
-                return SubTableSubColumnSelection(self.session_table, primary_key_values[_slice], self.column_names)
+            return SubTableSubColumnSelection(self.session_table, primary_key_values[_slice], self.column_names)
+
         if isinstance(key, str):
-            # TableSubColumnSelection[column_name]
+            # TableSubColumnSelection[column_name] -> ColumnSelection
             column_name = key
-            primary_key_values = self.get_primary_key_values()
-            _type = type(self)
-            if isinstance(self, SubTableSelection):
-                return SubColumnSelection(self.session_table, column_name, primary_key_values)
-            else:
-                return ColumnSelection(self.session_table, column_name)
-        if isinstance(key, tuple):
-            # TableSubColumnSelection[column_name, <index or slice>]
-            column_name = key[0]
-            primary_key_values = self.get_primary_key_values()
-            if isinstance(key[1], int):
-                # TableSubColumnSelection[column_name, index]
-                index = key[1]
-                return ValueSelection(self.session_table, column_name, primary_key_values[index])
-            if isinstance(key[1], slice):
-                # TableSubColumnSelection[column_name, slice]
-                _slice = key[1]
-                return SubColumnSelection(self.session_table, column_name, primary_key_values[_slice])
-            if isinstance(key[1], Iterable) and all(isinstance(item, bool) for item in key[1]):
-                filter = key[1]
-                primary_keys = self.get_primary_keys_by_filter(filter)
-                return SubColumnSelection(self.session_table, column_name, primary_keys)
+            return ColumnSelection(self.session_table, column_name)
+
+        # if isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+
         if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
-            # TableSubColumnSelection[Iterable[bool]]
+            # TableSubColumnSelection[filter]
             filter = key
             primary_keys = self.get_primary_keys_by_filter(filter)
             return SubTableSubColumnSelection(self.session_table, primary_keys, self.column_names)
+
         if isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
-            # TableSubColumnSelection[Iterable[str]]
+            # TableSubColumnSelection[column_names]
             column_names = key
             return TableSubColumnSelection(self.session_table, column_names)
-     
 
+        raise NotImplemented('TableSubColumnSelection only supports selection by int, slice, str, Iterable[bool], and Iterable[str].')
+
+    def __setitem__(self, key, value):
+        if isinstance(key, int):
+            # TableSubColumnSelection[index] = value
+            index = key
+            sub_record_selection = self[index]
+            sub_record_selection.update(value)
+
+        elif isinstance(key, slice):
+            # TableSubColumnSelection[slice] = value
+            _slice = key
+            sub_table_sub_column_selection = self[_slice]
+            sub_table_sub_column_selection.update(value)
+
+        elif isinstance(key, str):
+            # TableSubColumnSelection[column_name] = value
+            column_name = key
+            sub_column_selection = self[column_name]
+            sub_column_selection.update(value)
+
+        # elif isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+
+        elif isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
+            # TableSubColumnSelection[Iterable[bool]] = value
+            raise NotImplemented('SubTableSubColumnSelection updating is not implemented.')
+
+        elif isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
+            # TableSubColumnSelection[column_names] = value
+            raise NotImplemented('TableSubColumnSelection updating is not implemented.')
+
+        else:
+            raise NotImplemented('TableSubColumnSelection only supports selection updating by int, slice, and str.')
+
+    def __delitem__(self, key):
+        if isinstance(key, int):
+            # del TableSubColumnSelection[index]
+            raise NotImplemented('SubRecordSelection deletion is not implemented.')
+
+        if isinstance(key, slice):
+            # del TableSubColumnSelection[slice]
+            raise NotImplemented('SubTableSubColumnSelection deletion is not implemented.')
+
+        if isinstance(key, str):
+            # del TableSubColumnSelection[column_name]
+            raise NotImplemented('SubColumnSelection deletion is not implemented.')
+
+        # if isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+
+        if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
+            # del TableSubColumnSelection[filter]
+            raise NotImplemented('SubTableSubColumnSelection deletion is not implemented.')
+
+        if isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
+            # del TableSubColumnSelection[column_names]
+            raise NotImplemented('TableSubColumnSelection deletion is not implemented.')
+
+        raise NotImplemented('TableSubColumnSelection does not support deletion.')
+     
+@selection_chaining
 class SubTableSelection(TableSelection):
     # returned when a subset of records is selecected
     def __init__(self, session_table, primary_key_values: list[Record]):
@@ -285,6 +291,105 @@ class SubTableSelection(TableSelection):
 
     def __len__(self):
         return len(self.primary_key_values)
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            # SubTableSelection[index] -> RecordSelection
+            primary_key_values = self.get_primary_key_values()
+            return RecordSelection(self.session_table, primary_key_values[key])
+
+        if isinstance(key, slice):
+            # SubTableSelection[slice] -> SubTableSelection
+            _slice = key
+            primary_key_values = self.get_primary_key_values()
+            return SubTableSelection(self.session_table, primary_key_values[_slice])
+
+        if isinstance(key, str):
+            # SubTableSelection[column_name] -> SubColumnSelection
+            column_name = key
+            primary_key_values = self.get_primary_key_values()
+            return SubColumnSelection(self.session_table, column_name, primary_key_values)
+
+        # if isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+
+        if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
+            # SubTableSelection[filter] -> SubTableSelection
+            filter = key
+            primary_keys = self.get_primary_keys_by_filter(filter)
+            return SubTableSelection(self.session_table, primary_keys)
+
+        if isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
+            # SubTableSelection[column_names] -> SubTableSubColumnSelection
+            column_names = key
+            return SubTableSubColumnSelection(self.session_table, column_names, column_names)
+
+        raise NotImplemented('SubTableSelection only supports selection by int, slice, str, Iterable[bool], and Iterable[str].')
+
+    def __setitem__(self, key, value):
+        if isinstance(key, int):
+            # SubTableSelection[index] = value
+            index = key
+            sub_record_selection = self[index]
+            sub_record_selection.update(value)
+
+        elif isinstance(key, slice):
+            # SubTableSelection[slice] = value
+            _slice = key
+            sub_table_selection = self[_slice]
+            sub_table_selection.update(value)
+
+        elif isinstance(key, str):
+            # SubTableSelection[column_name] = value
+            column_name = key
+            sub_column_selection = self[column_name]
+            sub_column_selection.update(value)
+
+        # elif isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+
+        elif isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
+            # SubTableSelection[Iterable[bool]] = value
+            raise NotImplemented('SubTableSubColumnSelection updating is not implemented.')
+
+        elif isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
+            # SubTableSelection[column_names] = value
+            raise NotImplemented('SubTableSubColumnSelection updating is not implemented.')
+
+        else:
+            raise NotImplemented('SubTableSelection only supports selection updating by int, slice, and str.')
+
+    def __delitem__(self, key):
+        # del SubTableSelection[key]
+        if isinstance(key, int):
+            # del SubTableSelection[index]
+            index = key
+            sub_record_selection = self[index]
+            sub_record_selection.delete()
+
+        elif isinstance(key, slice):
+            # del SubTableSelection[slice]
+            _slice = key
+            sub_table_selection = self[_slice]
+            sub_table_selection.delete()
+
+        elif isinstance(key, str):
+            # del SubTableSelection[column_name]
+            raise NotImplemented('SubColumnSelection deletion is not implemented.')
+
+        # elif isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+
+        elif isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
+            # del SubTableSelection[filter]
+            raise NotImplemented('SubTableSubColumnSelection deletion is not implemented.')
+
+        elif isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
+            # del SubTableSelection[column_names]
+            raise NotImplemented('TableSubColumnSelection deletion is not implemented.')
+
+        else:
+            raise NotImplemented('SubTableSelection only supports selection updating by int and slice.')
 
     @property
     def records(self) -> list[Record]:
@@ -302,6 +407,7 @@ class SubTableSelection(TableSelection):
     def get_primary_keys_by_filter(self, filter: Iterable[bool]):
         return [record for record, b in zip(self.primary_key_values, filter) if b]
 
+@selection_chaining
 class SubTableSubColumnSelection(SubTableSelection):
     # returned when a subset of records is selected and a subset of columns is selected
     def __init__(self, session_table, primary_key_values, column_names):
@@ -309,62 +415,51 @@ class SubTableSubColumnSelection(SubTableSelection):
         self.column_names = column_names
 
     def __repr__(self):
-            return f"SubTableSubColumnSelection(name='{self.table_name}', records={self.subrecords})" 
+            return f"SubTableSubColumnSelection(name='{self.table_name}', records={self.records})" 
 
     def __getitem__(self, key):
         if isinstance(key, int):
-            # SubTableSubColumnSelection[index]
+            # SubTableSubColumnSelection[index] -> SubRecordSelection
             primary_key_values = self.get_primary_key_values()
             return SubRecordSelection(self.session_table, primary_key_values[key], self.column_names)
+
         if isinstance(key, slice):
-            # SubTableSubColumnSelection[slice]
+            # SubTableSubColumnSelection[slice] -> SubTableSubColumnSelection
             _slice = key
             primary_key_values = self.get_primary_key_values()
-            if key.start is None and key.stop is None:
-                return SubTableSubColumnSelection(self.session_table, primary_key_values, self.column_names)
-            else:
-                return SubTableSubColumnSelection(self.session_table, primary_key_values[_slice], self.column_names)
+            return SubTableSubColumnSelection(self.session_table, primary_key_values[_slice], self.column_names)
+
         if isinstance(key, str):
-            # SubTableSubColumnSelection[column_name]
+            # SubTableSubColumnSelection[column_name] -> SubColumnSelection
             column_name = key
             primary_key_values = self.get_primary_key_values()
             _type = type(self)
             return SubColumnSelection(self.session_table, column_name, primary_key_values)
 
-        if isinstance(key, tuple):
-            # SubTableSubColumnSelection[column_name, <index or slice>]
-            column_name = key[0]
-            primary_key_values = self.get_primary_key_values()
-            if isinstance(key[1], int):
-                # SubTableSubColumnSelection[column_name, index]
-                index = key[1]
-                return ValueSelection(self.session_table, column_name, primary_key_values[index])
-            if isinstance(key[1], slice):
-                # SubTableSubColumnSelection[column_name, slice]
-                _slice = key[1]
-                return SubColumnSelection(self.session_table, column_name, primary_key_values[_slice])
-            if isinstance(key[1], Iterable) and all(isinstance(item, bool) for item in key[1]):
-                filter = key[1]
-                primary_keys = self.get_primary_keys_by_filter(filter)
-                return SubColumnSelection(self.session_table, column_name, primary_keys)
+        # if isinstance(key, tuple):
+        #     raise NotImplemented('tuple selection is not implemented.')
+
         if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
-            # SubTableSubColumnSelection[Iterable[bool]]
+            # SubTableSubColumnSelection[filter] -> SubTableSubColumnSelection
             filter = key
             primary_keys = self.get_primary_keys_by_filter(filter)
             return SubTableSubColumnSelection(self.session_table, primary_keys, self.column_names)
+
         if isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
-            # SubTableSubColumnSelection[Iterable[str]]
+            # SubTableSubColumnSelection[column_names] -> SubTableSubColumnSelection
             column_names = key
             return SubTableSubColumnSelection(self.session_table, column_names, column_names)
 
+        raise NotImplemented('SubTableSubColumnSelection only supports selection by int, slice, str, Iterable[bool], and Iterable[str].')
+
     @property
-    def subrecords(self):
+    def records(self):
         return select_records_by_primary_keys(self.sa_table,
                                               self.session,
                                               self.primary_key_values,
                                               include_columns=self.column_names)
 
-
+@selection_chaining
 class ColumnSelection(Selection):
     # returned when a column is selected
     def __init__(self, session_table, column_name: str):
@@ -393,8 +488,10 @@ class ColumnSelection(Selection):
         if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
             # ColumnSelection[Iterable[bool]]
             filter = key
-            primary_key_values = self.get_primary_key_values_by_filter(filter)
+            primary_key_values = self.get_primary_keys_by_filter(filter)
             return SubColumnSelection(self.session_table, self.column_name, primary_key_values)
+
+        raise NotImplemented('ColumnSelection only supports selection by int, slice, and Iterable[bool].')
 
     def __setitem__(self, key, value):
         if isinstance(key, int):
@@ -403,81 +500,94 @@ class ColumnSelection(Selection):
             value_selection = self[index]
             value_selection.update(value)
         
-        if isinstance(key, slice):
+        elif isinstance(key, slice):
             # ColumnSelection[slice] = value
             _slice = key
             sub_column_selection = self[_slice]
             sub_column_selection.update(value)
 
-        if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
+        elif isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
             # ColumnSelection[Iterable[bool]] = value
             filter = key
             sub_column_selection = self[filter]
             sub_column_selection.update(value)
 
-    def __add__(self, value):
+        else:
+            raise NotImplemented('ColumnSelection only supports selection updating by int, slice, and Iterable[bool].')
+
+    def __add__(self, value) -> None:
         # update values by adding value
         records = self.get_records()
         if isinstance(value, Number):
             for record in records:
                 record[self.column_name] += value
+
         elif isinstance(value, Iterable) and not isinstance(value, str):
             for record, val in zip(records, value):
                 record[self.column_name] += val
+
         update_records_session(self.sa_table, records, self.session)
 
-    def __sub__(self, value):
+    def __sub__(self, value) -> None:
         # update values by subtracting value
         records = self.get_records()
         if isinstance(value, Number):
             for record in records:
                 record[self.column_name] -= value
+
         elif isinstance(value, Iterable) and not isinstance(value, str):
             for record, val in zip(records, value):
                 record[self.column_name] -= val
+
         update_records_session(self.sa_table, records, self.session)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> Filter:
         # ColumnSelection == value
         # Returns filter
         if isinstance(other, Iterable) and not isinstance(other, str):
-            return [value == item for value, item in zip(self.values, other)]
-        return [item == other for item in self.values]
+            return Filter([value == item for value, item in zip(self.values, other)])
 
-    def __ne__(self, other):
+        return Filter([item == other for item in self.values])
+
+    def __ne__(self, other) -> Filter:
         # ColumnSelection != value
         # Return filter
         if isinstance(other, Iterable) and not isinstance(other, str):
-            return [value != item for value, item in zip(self.values, other)]
-        return [item != other for item in self.values]
+            return Filter([value != item for value, item in zip(self.values, other)])
 
-    def __ge__(self, other):
+        return Filter([item != other for item in self.values])
+
+    def __ge__(self, other) -> Filter:
         # ColumnSelection >= value
         # Return filter
         if isinstance(other, Iterable) and not isinstance(other, str):
-            return [value >= item for value, item in zip(self.values, other)]
-        return [value >= other for value in self.values]
+            return Filter([value >= item for value, item in zip(self.values, other)])
 
-    def __le__(self, other):
+        return Filter([value >= other for value in self.values])
+
+    def __le__(self, other) -> Filter:
         # ColumnSelection <= value
         # Return filter
         if isinstance(other, Iterable) and not isinstance(other, str):
-            return [value <= item for value, item in zip(self.values, other)]
-        return [value <= other for value in self.values]
+            return Filter([value <= item for value, item in zip(self.values, other)])
 
-    def __lt__(self, other):
+        return Filter([value <= other for value in self.values])
+
+    def __lt__(self, other) -> Filter:
         # ColumnSelection < value
         # Return filter
         if isinstance(other, Iterable) and not isinstance(other, str):
-            return [value < item for value, item in zip(self.values, other)]
-        return [item < other for item in self.values]
+            return Filter([value < item for value, item in zip(self.values, other)])
 
-    def __gt__(self, other):
+        return Filter([item < other for item in self.values])
+
+    def __gt__(self, other) -> Filter:
         # ColumnSelection > value
         # Return filter
         if isinstance(other, Iterable) and not isinstance(other, str):
-            return [value > item for value, item in zip(self.values, other)]
-        return [item > other for item in self.values]
+            return Filter([value > item for value, item in zip(self.values, other)])
+
+        return Filter([item > other for item in self.values])
 
     @property
     def values(self):
@@ -510,12 +620,14 @@ class ColumnSelection(Selection):
         if isinstance(values, Iterable) and not isinstance(values, str):
             for record, value in zip(primary_key_values, values):
                 record[self.column_name] = value
+
         else:
             for record in primary_key_values:
                 record[self.column_name] = values
+
         update_records_session(self.sa_table, primary_key_values, self.session)
 
-
+@selection_chaining
 class SubColumnSelection(ColumnSelection):
     # returned when a subset of a column is selecected
     def __init__(self, session_table, column_name: str, primary_key_values: list[Record]):
@@ -538,7 +650,7 @@ class SubColumnSelection(ColumnSelection):
     def get_records(self):
         return select_records_by_primary_keys(self.sa_table, self.session, self.primary_key_values)
 
-
+@selection_chaining
 class RecordSelection(Selection):
     # returned when a single record is selected with SessionTable
     def __init__(self, session_table, primary_key_values: Record):

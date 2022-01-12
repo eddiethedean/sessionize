@@ -16,8 +16,9 @@ from sessionize.exceptions import MissingPrimaryKey
 from sessionize.orm.selection import Selection
 from sessionize.orm.selection import TableSelection
 from sessionize.exceptions import rollback_on_exception
+from sessionize.orm.selection_chaining import selection_chaining
 
-
+@selection_chaining
 class SessionTable:
     def __init__(self, name: str, engine: sa.engine.Engine, schema: Optional[str] = None):
         self.name = name
