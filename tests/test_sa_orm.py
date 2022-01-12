@@ -107,7 +107,7 @@ class TestSelectRecords(unittest.TestCase):
             {'id': 3, 'name': 'Emma', 'age': 19},
             {'id': 4, 'name': 'Noah', 'age': 20},
         ]
-        results = select_records(table, engine, schema=schema)
+        results = select_records(table, engine, schema=schema, sorted=True)
         self.assertEqual(results, expected)
 
     def test_select_records_sqlite(self):

@@ -4,6 +4,7 @@ from typing import Optional, Any, Union, Generator
 import sqlalchemy as sa
 from sqlalchemy.sql import select
 from sqlalchemy.sql.elements import and_, or_
+from sqlalchemy.orm import load_only
 
 from sessionize.utils.sa_orm import get_column, _get_table, get_row_count, primary_keys
 from sessionize.utils.custom_types import Record, SqlConnection
@@ -14,7 +15,9 @@ def select_records(
     table: Union[sa.Table, str],
     connection: SqlConnection,
     chunksize: Optional[int] = None,
-    schema: Optional[str] = None
+    schema: Optional[str] = None,
+    sorted: bool = False,
+    include_columns: Optional[list[str]] = None
 ) -> Union[list[Record], Generator[list[Record], None, None]]:
     """
     Queries database for records in table.
@@ -36,15 +39,17 @@ def select_records(
     """
     table = _get_table(table, connection, schema=schema)
     if chunksize is None:
-        return select_records_all(table, connection)
+        return select_records_all(table, connection, sorted=sorted, include_columns=include_columns)
     else:
-        return select_records_chunks(table, connection, chunksize)
+        return select_records_chunks(table, connection, chunksize, sorted=sorted, include_columns=include_columns)
 
 
 def select_records_all(
     table: Union[sa.Table, str],
     connection: SqlConnection,
-    schema: Optional[str] = None
+    schema: Optional[str] = None,
+    sorted: bool = False,
+    include_columns: Optional[list[str]] = None
 ) -> list[Record]:
     """
     Queries database for records in table.
@@ -62,7 +67,15 @@ def select_records_all(
     list of sql table records.
     """
     table = _get_table(table, connection, schema=schema)
-    query = select(table).order_by(*table.primary_key.columns.values())
+    
+    if include_columns is not None:
+        columns = [get_column(table, column_name) for column_name in include_columns]
+        query = select(*columns)
+    else:
+        query = select(table)
+
+    if sorted:
+        query = query.order_by(*table.primary_key.columns.values())
     results = connection.execute(query)
     return [dict(r) for r in results]
 
@@ -71,7 +84,9 @@ def select_records_chunks(
     table: Union[sa.Table, str],
     connection: SqlConnection,
     chunksize: int = 2,
-    schema: Optional[str] = None
+    schema: Optional[str] = None,
+    sorted: bool = False,
+    include_columns: Optional[list[str]] = None
 ) -> Generator[list[Record], None, None]:
     """
     Queries database for records in table.
@@ -91,7 +106,15 @@ def select_records_chunks(
     Generator of lists of sql table records.
     """
     table = _get_table(table, connection, schema=schema)
-    query = select(table).order_by(*table.primary_key.columns.values())
+
+    if include_columns is not None:
+        columns = [get_column(table, column_name) for column_name in include_columns]
+        query = select(*columns)
+    else:
+        query = select(table)
+
+    if sorted:
+        query = query.order_by(*table.primary_key.columns.values())
     stream = connection.execute(query, execution_options={'stream_results': True})
     for results in stream.partitions(chunksize):
         yield [dict(r) for r in results]
@@ -275,7 +298,9 @@ def select_records_slice(
     connection: SqlConnection,
     start: Optional[int] = None,
     stop: Optional[int] = None,
-    schema: Optional[str] = None
+    schema: Optional[str] = None,
+    sorted: bool = False,
+    include_columns: Optional[list[str]] = None
 ) -> list[Record]:
     """
 
@@ -294,7 +319,14 @@ def select_records_slice(
     start, stop = _convert_slice_indexes(table, connection, start, stop)
     if stop < start:
         raise SliceError('stop cannot be less than start.')
-    query = select(table).order_by(*table.primary_key.columns.values()).slice(start, stop)
+    if include_columns is not None:
+        columns = [get_column(table, column_name) for column_name in include_columns]
+        query = select(*columns)
+    else:
+        query = select(table)
+    if sorted:
+        query = query.order_by(*table.primary_key.columns.values())
+    query = query.slice(start, stop)
     results = connection.execute(query)
     return [dict(r) for r in results]
 
@@ -303,7 +335,8 @@ def select_record_by_index(
     table: Union[sa.Table, str],
     connection: SqlConnection,
     index: int,
-    schema: Optional[str] = None
+    schema: Optional[str] = None,
+    include_columns: Optional[list[str]] = None
 ) -> Record:
     """
     Select a record by index.
@@ -314,7 +347,7 @@ def select_record_by_index(
         if index < -row_count:
             raise IndexError('Index out of range.') 
         index = _calc_positive_index(index, row_count)
-    records = select_records_slice(table, connection, index, index+1)
+    records = select_records_slice(table, connection, index, index+1, include_columns=include_columns)
     if len(records) == 0:
         raise IndexError('Index out of range.')
     return records[0]
@@ -323,7 +356,8 @@ def select_record_by_index(
 def select_first_record(
     table: Union[sa.Table, str],
     connection: SqlConnection,
-    schema: Optional[str] = None
+    schema: Optional[str] = None,
+    include_columns: Optional[list[str]] = None
 ) -> Union[dict, None]:
     """
     Select first record in table
@@ -331,7 +365,7 @@ def select_first_record(
     Returns None if table is empty
     """
     table = _get_table(table, connection, schema=schema)
-    for chunk in select_records(table, connection, chunksize=1):
+    for chunk in select_records(table, connection, chunksize=1, include_columns=include_columns):
         return chunk[0]
     return None
 
@@ -379,20 +413,33 @@ def select_primary_key_records_by_slice(
     table: Union[sa.Table, str],
     connection: SqlConnection,
     _slice: slice,
-    schema: Optional[str] = None
-) -> list:
+    schema: Optional[str] = None,
+    sorted: bool = False
+) -> list[Record]:
     """
     Select primary key values by slice.
     """
-    start = _slice[0]
-    stop = _slice[1]
+    start = _slice.start
+    stop = _slice.stop
     table = _get_table(table, connection, schema=schema)
     start, stop = _convert_slice_indexes(table, connection, start, stop)
     if stop < start:
         raise SliceError('stop cannot be less than start.')
-    query = select(table.primary_key.columns.values()).order_by(*table.primary_key.columns.values()).slice(start, stop)
+    if sorted:
+        query = select(table.primary_key.columns.values()).order_by(*table.primary_key.columns.values()).slice(start, stop)
+    else:
+        query = select(table.primary_key.columns.values()).slice(start, stop)
     results = connection.execute(query)
     return [dict(r) for r in results]
+
+
+def select_primary_key_values(
+    table: Union[sa.Table, str],
+    connection: SqlConnection,
+    schema: Optional[str] = None
+) -> list[Record]:
+    table = _get_table(table, connection, schema=schema)
+    return select_primary_key_records_by_slice(table, connection, slice(None, None))
 
 
 def select_primary_key_record_by_index(
@@ -410,7 +457,7 @@ def select_primary_key_record_by_index(
         if index < -row_count:
             raise IndexError('Index out of range.') 
         index = _calc_positive_index(index, row_count)
-    return select_primary_key_records_by_slice(table, connection, index, index+1)[0]
+    return select_primary_key_records_by_slice(table, connection, slice(index, index+1))[0]
 
 
 def check_slice_primary_keys_match(
@@ -425,7 +472,7 @@ def check_slice_primary_keys_match(
     Check if records have matching primary key values to slice of table records
     """
     table = _get_table(table, connection, schema=schema)
-    slice_key_values = select_primary_key_records_by_slice(table, connection, start, stop)
+    slice_key_values = select_primary_key_records_by_slice(table, connection, slice(start, stop))
     keys = primary_keys(table)
     records_key_values = [{key:record[key] for key in keys} for record in records]
 
@@ -451,27 +498,33 @@ def check_index_keys_match(
     """
     table = _get_table(table, connection, schema=schema)
     keys = primary_keys(table)
-    key_record = select_primary_key_record_by_index(table, index, connection)
+    key_record = select_primary_key_record_by_index(table, connection, index)
     return {key:record[key] for key in keys} == key_record
 
 
 def select_record_by_primary_key(
     table: Union[sa.Table, str],
     connection: SqlConnection,
-    primary_key_values: Record,
-    schema: Optional[str] = None
+    primary_key_value: Record,
+    schema: Optional[str] = None,
+    include_columns: Optional[list[str]] = None
 ) -> list[Record]:
     """
     Select a record by primary key values
     """
     table = _get_table(table, connection, schema=schema)
     keys = primary_keys(table)
-    if set(primary_key_values.keys()) != set(keys):
+    if set(primary_key_value.keys()) != set(keys):
         raise KeyError('primary_key_values must have values for all primary keys.')
 
-    where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_values.items()]
-
-    query = select(table).where((and_(*where_clause)))
+    where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_value.items()]
+    if len(where_clause) == 0:
+        return []
+    if include_columns is not None:
+        columns = [get_column(table, column_name) for column_name in include_columns]
+        query = select(*columns).where((and_(*where_clause)))
+    else:
+        query = select(table).where((and_(*where_clause)))
     results = connection.execute(query)
     return [dict(r) for r in results]
 
@@ -479,24 +532,30 @@ def select_record_by_primary_key(
 def select_records_by_primary_keys(
     table: Union[sa.Table, str],
     connection: SqlConnection,
-    primary_key_values: list[Record],
-    schema: Optional[str] = None
+    primary_keys_values: list[Record],
+    schema: Optional[str] = None,
+    include_columns: Optional[list[str]] = None
 ) -> list[Record]:
     """
     Select the records that match the primary key values
     """
     table = _get_table(table, connection, schema=schema)
     keys = primary_keys(table)
-    for record in primary_key_values:
+    for record in primary_keys_values:
         if set(record.keys()) != set(keys):
             raise KeyError('primary_key_values must have values for all primary keys.')
 
     where_clauses = []
-    for record in primary_key_values:
+    for record in primary_keys_values:
         where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
         where_clauses.append(and_(*where_clause))
-
-    query = select(table).where((or_(*where_clauses)))
+    if len(where_clauses) == 0:
+        return []
+    if include_columns is not None:
+        columns = [get_column(table, column_name) for column_name in include_columns]
+        query = select(*columns).where((or_(*where_clauses)))
+    else:
+        query = select(table).where((or_(*where_clauses)))
     results = connection.execute(query)
     return [dict(r) for r in results]
 
@@ -505,21 +564,23 @@ def select_column_values_by_primary_keys(
     table: sa.Table,
     connection: SqlConnection,
     column_name: str,
-    primary_key_values: list[Record]
+    primary_keys_values: list[Record]
 ) -> list:
     """
     Select multiple values from a column by primary key values
     """
     keys = primary_keys(table)
-    for record in primary_key_values:
+    for record in primary_keys_values:
         if set(record.keys()) != set(keys):
             raise KeyError('primary_key_values must have values for all primary keys.')
 
     where_clauses = []
-    for record in primary_key_values:
+    for record in primary_keys_values:
         where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
         where_clauses.append(and_(*where_clause))
 
+    if len(where_clauses) == 0:
+        return []
     query = select(table.c[column_name]).where((or_(*where_clauses)))
     results = connection.execute(query)
     return results.scalars().fetchall()
@@ -529,7 +590,7 @@ def select_value_by_primary_keys(
     table: Union[sa.Table, str],
     connection: SqlConnection,
     column_name: str,
-    primary_key_values: Record,
+    primary_key_value: Record,
     schema: Optional[str] = None
 ) -> Any:
     """
@@ -537,10 +598,11 @@ def select_value_by_primary_keys(
     """
     table = _get_table(table, connection, schema=schema)
     keys = primary_keys(table)
-    if set(primary_key_values.keys()) != set(keys):
+    if set(primary_key_value.keys()) != set(keys):
         raise KeyError('primary_key_values must have values for all primary keys.')
 
-    where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_values.items()]
-
+    where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_value.items()]
+    if len(where_clause) == 0:
+        raise KeyError('No such primary key values exist in table.')
     query = select(table.c[column_name]).where((and_(*where_clause)))
     return connection.execute(query).scalars().all()[0]

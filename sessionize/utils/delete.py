@@ -52,6 +52,8 @@ def delete_record_by_values_session(
     # Delete any records that match the given record values.
     table = _get_table(table, session, schema=schema)
     where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
+    if len(where_clause) == 0:
+        return
     session.query(table).where((and_(*where_clause))).delete(synchronize_session=False)
 
 
@@ -67,7 +69,9 @@ def delete_records_by_values_session(
     for record in records:
         where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
         where_clauses.append(and_(*where_clause))
-    session.query(table).where((or_(*where_clause))).delete(synchronize_session=False)
+    if len(where_clauses) == 0:
+        return
+    session.query(table).where((or_(*where_clauses))).delete(synchronize_session=False)
 
 
 def delete_records(

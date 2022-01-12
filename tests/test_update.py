@@ -31,7 +31,7 @@ class TestUpdateRecords(unittest.TestCase):
             {'id': 4, 'name': 'Noah', 'age': 20},
         ]
 
-        results = select_records(table, engine, schema=schema)
+        results = select_records(table, engine, schema=schema, sorted=True)
         self.assertEqual(results, expected)
 
     def test_update_records_sqlite(self):

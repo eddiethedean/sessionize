@@ -31,7 +31,7 @@ class TestSessionTable(unittest.TestCase):
             st.update_records(updated_records)
             st.update_one_record(one_updated_record)
 
-        records = select_records(table, engine, schema=schema)
+        records = select_records(table, engine, schema=schema, sorted=True)
         expected = [
             {'id': 3, 'name': 'Emmy', 'age': 20},
             {'id': 4, 'name': 'Noah', 'age': 21},
@@ -78,7 +78,7 @@ class TestSessionTable(unittest.TestCase):
         except ForceFail:
             pass
 
-        records = select_records(table, engine, schema=schema)
+        records = select_records(table, engine, schema=schema, sorted=True)
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17},
             {'id': 2, 'name': 'Liam', 'age': 18},
