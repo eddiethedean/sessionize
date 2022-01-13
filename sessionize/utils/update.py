@@ -3,6 +3,7 @@ from typing import Optional, Union
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import PendingRollbackError
 
 from sessionize.utils.custom_types import Record
 from sessionize.utils.sa_orm import get_class, _get_table
@@ -40,12 +41,16 @@ def update_records_session(
     -------
     None
     """
-    engine = session.get_bind()
-    table = _get_table(table, engine, schema=schema)
-    table_name = table.name
-    table_class = get_class(table_name, engine, schema=schema)
-    mapper = sa.inspect(table_class)
-    session.bulk_update_mappings(mapper, records)
+    try:
+        engine = session.get_bind()
+        table = _get_table(table, engine, schema=schema)
+        table_name = table.name
+        table_class = get_class(table_name, engine, schema=schema)
+        mapper = sa.inspect(table_class)
+        session.bulk_update_mappings(mapper, records)
+    except PendingRollbackError:
+        session.rollback()
+        update_records_session(table, records, session, schema)
 
 
 def update_records(

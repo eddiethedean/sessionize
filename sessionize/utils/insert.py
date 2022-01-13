@@ -2,6 +2,7 @@ from typing import Optional, Union
 
 import sqlalchemy as sa
 from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy.exc import PendingRollbackError
 
 from sessionize.utils.custom_types import Record
 from sessionize.utils.sa_orm import get_class, _get_table
@@ -17,9 +18,13 @@ def insert_from_table_session(
     Inserts all records from table1 into table2.
     Only add inserts to session. Does not execute.
     """
-    table1 = _get_table(table1, session, schema=schema)
-    table2 = _get_table(table2, session, schema=schema)
-    session.execute(table2.insert().from_select(table1.columns.keys(), table1))
+    try:
+        table1 = _get_table(table1, session, schema=schema)
+        table2 = _get_table(table2, session, schema=schema)
+        session.execute(table2.insert().from_select(table1.columns.keys(), table1))
+    except PendingRollbackError:
+        session.rollback()
+        insert_from_table_session(table1, table2, session, schema)
 
 
 def insert_from_table(
@@ -69,12 +74,16 @@ def insert_records_session(
     -------
     None
     """
-    engine = session.get_bind()
-    table = _get_table(table, engine, schema=schema)
-    table_name = table.name
-    table_class = get_class(table_name, engine, schema=schema)
-    mapper = sa.inspect(table_class)
-    session.bulk_insert_mappings(mapper, records)
+    try:
+        engine = session.get_bind()
+        table = _get_table(table, engine, schema=schema)
+        table_name = table.name
+        table_class = get_class(table_name, engine, schema=schema)
+        mapper = sa.inspect(table_class)
+        session.bulk_insert_mappings(mapper, records)
+    except PendingRollbackError:
+        session.rollback()
+        insert_records_session(table, records, session, schema)
 
 
 def insert_records(

@@ -39,11 +39,9 @@ class SessionTable:
     def __getitem__(self, key) -> Selection:
         return self.table_selection[key]
     
-    @rollback_on_exception
     def __setitem__(self, key, value) -> None:
         self.table_selection[key] = value
 
-    @rollback_on_exception
     def __delitem__(self, key):
         del self.table_selection[key]
 
@@ -59,7 +57,6 @@ class SessionTable:
     def __len__(self):
         return get_row_count(self.sa_table, self.session)
 
-    @rollback_on_exception
     def __add__(self, value: Union[Record, list[Record]]):
         # insert a record or list of records into table
         if isinstance(value, dict):
