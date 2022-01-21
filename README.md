@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/eddiethedean/sessionize/blob/main/docs/logo_name.svg"><br>
+  <img src="https://1drv.ms/u/s!AvBznE_nJGknna5q3LafEguIN6lQ5g"><br>
 </div>
 
 -----------------
