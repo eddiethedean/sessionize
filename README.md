@@ -1,4 +1,4 @@
-![Sessionize Logo](https://www.dropbox.com/s/gp6dbkyr66foeog/logo_name.svg?dl=0")
+![Sessionize Logo](https://raw.githubusercontent.com/eddiethedean/sessionize/main/docs/logo_name.svg)
 -----------------
 
 # Sessionize: intutive Python SQL table manipulation toolkit
