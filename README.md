@@ -6,7 +6,7 @@
 
 ## What is it?
 
-**Sessionize** is a Python package that has an intuitive API that utilizes SqlAlchemy to connect to and manipulate SQL databases.
+**Sessionize** is a Python package that has an intuitive API that utilizes SqlAlchemy to connect to and manipulate records in SQL tables.
 
 ## Main Features
 Here are just a few of the things that Sessionize does well:
