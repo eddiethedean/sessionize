@@ -18,7 +18,7 @@ class TestRenameColumn(unittest.TestCase):
         rename_column(table.name, 'name', 'first_name', engine, schema=schema)
         table = get_table(table.name, engine, schema=schema)
         cols = set(table.columns.keys())
-        self.assertSetEqual(cols, {'id', 'age', 'first_name'})
+        self.assertSetEqual(cols, {'id', 'age', 'first_name', 'address_id'})
 
     def test_rename_column_sqlite(self):
         self.rename_column(sqlite_setup)
@@ -64,7 +64,7 @@ class TestDropColumn(unittest.TestCase):
         drop_column(table.name, 'name', engine, schema=schema)
         table = get_table(table.name, engine, schema=schema)
         cols = set(table.columns.keys())
-        self.assertSetEqual(cols, {'id', 'age'})
+        self.assertSetEqual(cols, {'id', 'age', 'address_id'})
 
     def test_drop_column_sqlite(self):
         self.drop_column(sqlite_setup)
@@ -96,7 +96,7 @@ class TestAddColumn(unittest.TestCase):
         engine, table = setup_function(schema=schema)
         table = add_column(table.name, 'last_name', str, engine, schema=schema)
         cols = set(table.columns.keys())
-        self.assertSetEqual(cols, {'id', 'age', 'name', 'last_name'})
+        self.assertSetEqual(cols, {'id', 'age', 'name', 'address_id', 'last_name'})
         self.assertIs(VARCHAR, type(get_column(table, 'last_name').type))
 
     def test_add_column_sqlite(self):

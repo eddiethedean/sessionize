@@ -41,16 +41,12 @@ def update_records_session(
     -------
     None
     """
-    try:
-        engine = session.get_bind()
-        table = _get_table(table, engine, schema=schema)
-        table_name = table.name
-        table_class = get_class(table_name, engine, schema=schema)
-        mapper = sa.inspect(table_class)
-        session.bulk_update_mappings(mapper, records)
-    except PendingRollbackError:
-        session.rollback()
-        update_records_session(table, records, session, schema)
+    engine = session.get_bind()
+    table = _get_table(table, engine, schema=schema)
+    table_name = table.name
+    table_class = get_class(table_name, engine, schema=schema)
+    mapper = sa.inspect(table_class)
+    session.bulk_update_mappings(mapper, records)
 
 
 def update_records(

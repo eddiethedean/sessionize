@@ -8,7 +8,7 @@ from sqlalchemy.exc import PendingRollbackError
 
 from sessionize.utils.sa_orm import get_column, _get_table, get_row_count, primary_keys
 from sessionize.utils.custom_types import Record, SqlConnection
-from sessionize.exceptions import SliceError
+from sessionize.exceptions import MissingPrimaryKey, SliceError
 
 
 def select_records(
@@ -158,14 +158,10 @@ def select_existing_values(
     -------
     List of matching values.
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        column = get_column(table, column_name)
-        query = select([column]).where(column.in_(values))
-        return connection.execute(query).scalars().fetchall()
-    except PendingRollbackError:
-        connection.rollback()
-        return select_existing_values(table, connection, column_name, values, schema)
+    table = _get_table(table, connection, schema=schema)
+    column = get_column(table, column_name)
+    query = select([column]).where(column.in_(values))
+    return connection.execute(query).scalars().fetchall()
 
 
 def select_column_values(
@@ -196,15 +192,11 @@ def select_column_values(
     -------
     list of sql table column values or generator of lists of values.
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        if chunksize is None:
-            return select_column_values_all(table, column_name, connection)
-        else:
-            return select_column_values_chunks(table, column_name, connection, chunksize)
-    except PendingRollbackError:
-        connection.rollback()
-        return select_column_values(table, connection, column_name, chunksize, schema)
+    table = _get_table(table, connection, schema=schema)
+    if chunksize is None:
+        return select_column_values_all(table, column_name, connection)
+    else:
+        return select_column_values_chunks(table, column_name, connection, chunksize)
 
 
 def select_column_values_all(
@@ -231,13 +223,9 @@ def select_column_values_all(
     -------
     list of sql table column values.
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        query = select(table.c[column_name])
-        return connection.execute(query).scalars().all()
-    except PendingRollbackError:
-        connection.rollback()
-        return select_column_values_all(table, connection, column_name, schema)
+    table = _get_table(table, connection, schema=schema)
+    query = select(table.c[column_name])
+    return connection.execute(query).scalars().all()
 
 
 def select_column_values_chunks(
@@ -266,15 +254,11 @@ def select_column_values_chunks(
     -------
     Generator of chunksized lists of sql table column values.
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        query = select(table.c[column_name])
-        stream = connection.execute(query, execution_options={'stream_results': True})
-        for results in stream.scalars().partitions(chunksize):
-            yield results
-    except PendingRollbackError:
-        connection.rollback()
-        return select_column_values_chunks(table, connection, column_name, chunksize, schema)
+    table = _get_table(table, connection, schema=schema)
+    query = select(table.c[column_name])
+    stream = connection.execute(query, execution_options={'stream_results': True})
+    for results in stream.scalars().partitions(chunksize):
+        yield results
 
 
 def _calc_positive_index(index: int, row_count: int) -> int:
@@ -344,24 +328,20 @@ def select_records_slice(
     stop is optional, is the last index + 1 if None.
 
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        start, stop = _convert_slice_indexes(table, connection, start, stop)
-        if stop < start:
-            raise SliceError('stop cannot be less than start.')
-        if include_columns is not None:
-            columns = [get_column(table, column_name) for column_name in include_columns]
-            query = select(*columns)
-        else:
-            query = select(table)
-        if sorted:
-            query = query.order_by(*table.primary_key.columns.values())
-        query = query.slice(start, stop)
-        results = connection.execute(query)
-        return [dict(r) for r in results]
-    except PendingRollbackError:
-        connection.rollback()
-        return select_records_slice(table, connection, start, stop, schema, sorted, include_columns)
+    table = _get_table(table, connection, schema=schema)
+    start, stop = _convert_slice_indexes(table, connection, start, stop)
+    if stop < start:
+        raise SliceError('stop cannot be less than start.')
+    if include_columns is not None:
+        columns = [get_column(table, column_name) for column_name in include_columns]
+        query = select(*columns)
+    else:
+        query = select(table)
+    if sorted:
+        query = query.order_by(*table.primary_key.columns.values())
+    query = query.slice(start, stop)
+    results = connection.execute(query)
+    return [dict(r) for r in results]
 
 
 def select_record_by_index(
@@ -374,20 +354,16 @@ def select_record_by_index(
     """
     Select a record by index.
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        if index < 0:
-            row_count = get_row_count(table, connection)
-            if index < -row_count:
-                raise IndexError('Index out of range.') 
-            index = _calc_positive_index(index, row_count)
-        records = select_records_slice(table, connection, index, index+1, include_columns=include_columns)
-        if len(records) == 0:
-            raise IndexError('Index out of range.')
-        return records[0]
-    except PendingRollbackError:
-        connection.rollback()
-        return select_record_by_index(table, connection, index, schema, include_columns)
+    table = _get_table(table, connection, schema=schema)
+    if index < 0:
+        row_count = get_row_count(table, connection)
+        if index < -row_count:
+            raise IndexError('Index out of range.') 
+        index = _calc_positive_index(index, row_count)
+    records = select_records_slice(table, connection, index, index+1, include_columns=include_columns)
+    if len(records) == 0:
+        raise IndexError('Index out of range.')
+    return records[0]
 
 
 def select_first_record(
@@ -418,16 +394,12 @@ def select_column_values_by_slice(
     """
     Select a subset of column values by slice.
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        start, stop = _convert_slice_indexes(table, connection, start, stop)
-        if stop < start:
-            raise SliceError('stop cannot be less than start.')
-        query = select(table.c[column_name]).slice(start, stop)
-        return connection.execute(query).scalars().all()
-    except PendingRollbackError:
-        connection.rollback()
-        return select_column_values_by_slice(table, connection, column_name, start, stop, schema)
+    table = _get_table(table, connection, schema=schema)
+    start, stop = _convert_slice_indexes(table, connection, start, stop)
+    if stop < start:
+        raise SliceError('stop cannot be less than start.')
+    query = select(table.c[column_name]).slice(start, stop)
+    return connection.execute(query).scalars().all()
 
 
 def select_column_value_by_index(
@@ -440,18 +412,14 @@ def select_column_value_by_index(
     """
     Select a column value by index.
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        if index < 0:
-            row_count = get_row_count(table, connection)
-            if index < -row_count:
-                raise IndexError('Index out of range.') 
-            index = _calc_positive_index(index, row_count)
-        query = select(table.c[column_name]).slice(index, index+1)
-        return connection.execute(query).scalars().all()[0]
-    except PendingRollbackError:
-        connection.rollback()
-        return select_column_value_by_index(table, connection, column_name, index, schema)
+    table = _get_table(table, connection, schema=schema)
+    if index < 0:
+        row_count = get_row_count(table, connection)
+        if index < -row_count:
+            raise IndexError('Index out of range.') 
+        index = _calc_positive_index(index, row_count)
+    query = select(table.c[column_name]).slice(index, index+1)
+    return connection.execute(query).scalars().all()[0]
 
 
 def select_primary_key_records_by_slice(
@@ -464,22 +432,18 @@ def select_primary_key_records_by_slice(
     """
     Select primary key values by slice.
     """
-    try:
-        start = _slice.start
-        stop = _slice.stop
-        table = _get_table(table, connection, schema=schema)
-        start, stop = _convert_slice_indexes(table, connection, start, stop)
-        if stop < start:
-            raise SliceError('stop cannot be less than start.')
-        if sorted:
-            query = select(table.primary_key.columns.values()).order_by(*table.primary_key.columns.values()).slice(start, stop)
-        else:
-            query = select(table.primary_key.columns.values()).slice(start, stop)
-        results = connection.execute(query)
-        return [dict(r) for r in results]
-    except PendingRollbackError:
-        connection.rollback()
-        return select_primary_key_records_by_slice(table, connection, _slice, schema, sorted)
+    start = _slice.start
+    stop = _slice.stop
+    table = _get_table(table, connection, schema=schema)
+    start, stop = _convert_slice_indexes(table, connection, start, stop)
+    if stop < start:
+        raise SliceError('stop cannot be less than start.')
+    if sorted:
+        query = select(table.primary_key.columns.values()).order_by(*table.primary_key.columns.values()).slice(start, stop)
+    else:
+        query = select(table.primary_key.columns.values()).slice(start, stop)
+    results = connection.execute(query)
+    return [dict(r) for r in results]
 
 
 def select_primary_key_values(
@@ -557,29 +521,27 @@ def select_record_by_primary_key(
     primary_key_value: Record,
     schema: Optional[str] = None,
     include_columns: Optional[list[str]] = None
-) -> list[Record]:
+) -> Record:
     """
     Select a record by primary key values
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        keys = primary_keys(table)
-        if set(primary_key_value.keys()) != set(keys):
-            raise KeyError('primary_key_values must have values for all primary keys.')
+    table = _get_table(table, connection, schema=schema)
+    keys = primary_keys(table)
+    # TODO: check if primary key values exist
 
-        where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_value.items()]
-        if len(where_clause) == 0:
-            return []
-        if include_columns is not None:
-            columns = [get_column(table, column_name) for column_name in include_columns]
-            query = select(*columns).where((and_(*where_clause)))
-        else:
-            query = select(table).where((and_(*where_clause)))
-        results = connection.execute(query)
-        return [dict(r) for r in results]
-    except PendingRollbackError:
-        connection.rollback()
-        return select_record_by_primary_key(table, connection, primary_key_value, schema, include_columns)
+    where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_value.items()]
+    if len(where_clause) == 0:
+        return []
+    if include_columns is not None:
+        columns = [get_column(table, column_name) for column_name in include_columns]
+        query = select(*columns).where((and_(*where_clause)))
+    else:
+        query = select(table).where((and_(*where_clause)))
+    results = connection.execute(query)
+    results = [dict(x) for x in results]
+    if len(results) == 0:
+        raise MissingPrimaryKey('Primary key values missing in table.')
+    return results[0]
 
 
 def select_records_by_primary_keys(
@@ -592,29 +554,23 @@ def select_records_by_primary_keys(
     """
     Select the records that match the primary key values
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        keys = primary_keys(table)
-        for record in primary_keys_values:
-            if set(record.keys()) != set(keys):
-                raise KeyError('primary_key_values must have values for all primary keys.')
+    table = _get_table(table, connection, schema=schema)
+    keys = primary_keys(table)
+    # TODO: check if primary key values exist
 
-        where_clauses = []
-        for record in primary_keys_values:
-            where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
-            where_clauses.append(and_(*where_clause))
-        if len(where_clauses) == 0:
-            return []
-        if include_columns is not None:
-            columns = [get_column(table, column_name) for column_name in include_columns]
-            query = select(*columns).where((or_(*where_clauses)))
-        else:
-            query = select(table).where((or_(*where_clauses)))
-        results = connection.execute(query)
-        return [dict(r) for r in results]
-    except PendingRollbackError:
-        connection.rollback()
-        return select_records_by_primary_keys(table, connection, primary_keys_values, schema, include_columns)
+    where_clauses = []
+    for record in primary_keys_values:
+        where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
+        where_clauses.append(and_(*where_clause))
+    if len(where_clauses) == 0:
+        return []
+    if include_columns is not None:
+        columns = [get_column(table, column_name) for column_name in include_columns]
+        query = select(*columns).where((or_(*where_clauses)))
+    else:
+        query = select(table).where((or_(*where_clauses)))
+    results = connection.execute(query)
+    return [dict(r) for r in results]
 
 
 def select_column_values_by_primary_keys(
@@ -626,25 +582,19 @@ def select_column_values_by_primary_keys(
     """
     Select multiple values from a column by primary key values
     """
-    try:
-        keys = primary_keys(table)
-        for record in primary_keys_values:
-            if set(record.keys()) != set(keys):
-                raise KeyError('primary_key_values must have values for all primary keys.')
+    keys = primary_keys(table)
+    # TODO: check if primary key values exist
 
-        where_clauses = []
-        for record in primary_keys_values:
-            where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
-            where_clauses.append(and_(*where_clause))
+    where_clauses = []
+    for record in primary_keys_values:
+        where_clause = [table.c[key_name]==key_value for key_name, key_value in record.items()]
+        where_clauses.append(and_(*where_clause))
 
-        if len(where_clauses) == 0:
-            return []
-        query = select(table.c[column_name]).where((or_(*where_clauses)))
-        results = connection.execute(query)
-        return results.scalars().fetchall()
-    except PendingRollbackError:
-        connection.rollback()
-        return select_column_values_by_primary_keys(table, connection, column_name, primary_keys_values)
+    if len(where_clauses) == 0:
+        return []
+    query = select(table.c[column_name]).where((or_(*where_clauses)))
+    results = connection.execute(query)
+    return results.scalars().fetchall()
 
 
 def select_value_by_primary_keys(
@@ -657,17 +607,12 @@ def select_value_by_primary_keys(
     """
     Select a single value from a column by primary key values
     """
-    try:
-        table = _get_table(table, connection, schema=schema)
-        keys = primary_keys(table)
-        if set(primary_key_value.keys()) != set(keys):
-            raise KeyError('primary_key_values must have values for all primary keys.')
+    table = _get_table(table, connection, schema=schema)
+    keys = primary_keys(table)
+    # TODO: check if primary key values exist
 
-        where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_value.items()]
-        if len(where_clause) == 0:
-            raise KeyError('No such primary key values exist in table.')
-        query = select(table.c[column_name]).where((and_(*where_clause)))
-        return connection.execute(query).scalars().all()[0]
-    except PendingRollbackError:
-        connection.rollback()
-        return select_value_by_primary_keys(table, connection, column_name, primary_key_value, schema)
+    where_clause = [table.c[key_name]==key_value for key_name, key_value in primary_key_value.items()]
+    if len(where_clause) == 0:
+        raise KeyError('No such primary key values exist in table.')
+    query = select(table.c[column_name]).where((and_(*where_clause)))
+    return connection.execute(query).scalars().all()[0]

@@ -11,11 +11,11 @@ class TestSessionTable(unittest.TestCase):
         engine, table = setup_function(schema=schema)
 
         new_records = [
-            {'name': 'Odos', 'age': 35},
-            {'name': 'Kayla', 'age': 28}
+            {'name': 'Odos', 'age': 35, 'address_id': 2},
+            {'name': 'Kayla', 'age': 28, 'address_id': 2},
         ]
 
-        one_new_record = {'name': 'Jim', 'age': 27}
+        one_new_record = {'name': 'Jim', 'age': 27, 'address_id': 1}
 
         updated_records = [
             {'id': 3, 'name': 'Emmy', 'age': 20},
@@ -33,11 +33,11 @@ class TestSessionTable(unittest.TestCase):
 
         records = select_records(table, engine, schema=schema, sorted=True)
         expected = [
-            {'id': 3, 'name': 'Emmy', 'age': 20},
-            {'id': 4, 'name': 'Noah', 'age': 21},
-            {'id': 5, 'name': 'Odos', 'age': 35},
-            {'id': 6, 'name': 'Kayla', 'age': 28},
-            {'id': 7, 'name': 'Jim', 'age': 27}
+            {'id': 3, 'name': 'Emmy', 'age': 20, 'address_id': 2},
+            {'id': 4, 'name': 'Noah', 'age': 21, 'address_id': 2},
+            {'id': 5, 'name': 'Odos', 'age': 35, 'address_id': 2},
+            {'id': 6, 'name': 'Kayla', 'age': 28, 'address_id': 2},
+            {'id': 7, 'name': 'Jim', 'age': 27, 'address_id': 1}
         ]
         self.assertEqual(records, expected)
     
@@ -54,17 +54,17 @@ class TestSessionTable(unittest.TestCase):
         engine, table = setup_function(schema=schema)
 
         new_records = [
-            {'name': 'Odos', 'age': 35},
-            {'name': 'Kayla', 'age': 28}
+            {'name': 'Odos', 'age': 35, 'address_id': 2},
+            {'name': 'Kayla', 'age': 28, 'address_id': 2}
         ]
 
-        one_new_record = {'name': 'Jim', 'age': 27}
+        one_new_record = {'name': 'Jim', 'age': 27, 'address_id': 1}
 
         updated_records = [
             {'id': 3, 'name': 'Emmy', 'age': 20},
         ]
 
-        one_updated_record = {'id': 4, 'name': 'Noah', 'age': 21}
+        one_updated_record = {'id': 4, 'name': 'Noah', 'age': 21, 'address_id': 2}
 
         try:
             with SessionTable(table.name, engine, schema=schema) as st:
@@ -80,10 +80,10 @@ class TestSessionTable(unittest.TestCase):
 
         records = select_records(table, engine, schema=schema, sorted=True)
         expected = [
-            {'id': 1, 'name': 'Olivia', 'age': 17},
-            {'id': 2, 'name': 'Liam', 'age': 18},
-            {'id': 3, 'name': 'Emma', 'age': 19},
-            {'id': 4, 'name': 'Noah', 'age': 20},
+            {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
+            {'id': 2, 'name': 'Liam', 'age': 18, 'address_id': 1},
+            {'id': 3, 'name': 'Emma', 'age': 19, 'address_id': 2},
+            {'id': 4, 'name': 'Noah', 'age': 20, 'address_id': 2},
         ]
         self.assertEqual(records, expected)
     

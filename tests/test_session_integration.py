@@ -20,8 +20,8 @@ class TestCombined(unittest.TestCase):
         engine, table = setup_function(schema=schema)
 
         new_people = [
-            {'name': 'Odos', 'age': 35},
-            {'name': 'Kayla', 'age': 28}
+            {'name': 'Odos', 'age': 35, 'address_id': 2},
+            {'name': 'Kayla', 'age': 28, 'address_id': 2}
         ]
 
         new_ages = [
@@ -34,12 +34,12 @@ class TestCombined(unittest.TestCase):
             update_records_session(table, new_ages, session, schema=schema)
 
         expected = [
-            {'id': 1, 'name': 'Olivia', 'age': 17},
-            {'id': 2, 'name': 'Liam', 'age': 19},
-            {'id': 3, 'name': 'Emma', 'age': 20},
-            {'id': 4, 'name': 'Noah', 'age': 20},
-            {'id': 5, 'name': 'Odos', 'age': 35},
-            {'id': 6, 'name': 'Kayla', 'age': 28}
+            {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
+            {'id': 2, 'name': 'Liam', 'age': 19, 'address_id': 1},
+            {'id': 3, 'name': 'Emma', 'age': 20, 'address_id': 2},
+            {'id': 4, 'name': 'Noah', 'age': 20, 'address_id': 2},
+            {'id': 5, 'name': 'Odos', 'age': 35, 'address_id': 2},
+            {'id': 6, 'name': 'Kayla', 'age': 28, 'address_id': 2}
         ]
 
         results = select_records(table, engine, schema=schema, sorted=True)
@@ -71,10 +71,10 @@ class TestCombined(unittest.TestCase):
             pass
 
         expected = [
-            {'id': 1, 'name': 'Olivia', 'age': 17},
-            {'id': 2, 'name': 'Liam', 'age': 18},
-            {'id': 3, 'name': 'Emma', 'age': 19},
-            {'id': 4, 'name': 'Noah', 'age': 20},
+            {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
+            {'id': 2, 'name': 'Liam', 'age': 18, 'address_id': 1},
+            {'id': 3, 'name': 'Emma', 'age': 19, 'address_id': 2},
+            {'id': 4, 'name': 'Noah', 'age': 20, 'address_id': 2},
         ]
 
         results = select_records(table, engine, schema=schema, sorted=True)
@@ -103,8 +103,8 @@ class TestCombined(unittest.TestCase):
             delete_records_session(table, 'id', [2, 3], session, schema=schema)
             
         expected = [
-            {'id': 1, 'name': 'Olivia', 'age': 17},
-            {'id': 4, 'name': 'Noah', 'age': 20},
+            {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
+            {'id': 4, 'name': 'Noah', 'age': 20, 'address_id': 2},
         ]
 
         results = select_records(table, engine, schema=schema, sorted=True)
@@ -124,8 +124,8 @@ class TestCombined(unittest.TestCase):
         engine, table = setup_function(schema=schema)
 
         new_people = [
-            {'name': 'Odos', 'age': 35},
-            {'name': 'Kayla', 'age': 28}
+            {'name': 'Odos', 'age': 35, 'address_id': 2},
+            {'name': 'Kayla', 'age': 28, 'address_id': 2}
         ]
 
         new_ages = [
@@ -139,10 +139,10 @@ class TestCombined(unittest.TestCase):
             update_records_session(table, new_ages, session, schema=schema)
             
         expected = [
-            {'id': 1, 'name': 'Olivia', 'age': 18},
-            {'id': 4, 'name': 'Noah', 'age': 21},
-            {'id': 5, 'name': 'Odos', 'age': 35},
-            {'id': 6, 'name': 'Kayla', 'age': 28}
+            {'id': 1, 'name': 'Olivia', 'age': 18, 'address_id': 1},
+            {'id': 4, 'name': 'Noah', 'age': 21, 'address_id': 2},
+            {'id': 5, 'name': 'Odos', 'age': 35, 'address_id': 2},
+            {'id': 6, 'name': 'Kayla', 'age': 28, 'address_id': 2}
         ]
 
         results = select_records(table, engine, schema=schema, sorted=True)

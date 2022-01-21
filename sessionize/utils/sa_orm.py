@@ -88,23 +88,19 @@ def get_table(
     -------
     A SqlAlchemy mapped Table object.
     """
-    try:
-        metadata = sa.MetaData(bind=connection, schema=schema)
-    
-        if isinstance(connection, sa.orm.Session):
-            autoload_with = connection.connection()
-        else:
-            autoload_with = connection
-    
-        return sa.Table(name,
-                    metadata,
-                    autoload=True,
-                    autoload_with=autoload_with,
-                    extend_existing=True,
-                    schema=schema)
-    except PendingRollbackError:
-        connection.rollback()
-        return get_table(name, connection, schema)
+    metadata = sa.MetaData(bind=connection, schema=schema)
+
+    if isinstance(connection, sa.orm.Session):
+        autoload_with = connection.connection()
+    else:
+        autoload_with = connection
+
+    return sa.Table(name,
+                metadata,
+                autoload=True,
+                autoload_with=autoload_with,
+                extend_existing=True,
+                schema=schema)
 
 
 def get_class(
@@ -132,20 +128,16 @@ def get_class(
     -------
     A SqlAlchemy table class object.
     """
-    try:
-        metadata = sa.MetaData(connection, schema=schema)
-        if isinstance(connection, sa.orm.Session):
-            reflect = connection.connection()
-        else:
-            reflect = connection
-    
-        metadata.reflect(reflect, only=[name], schema=schema)
-        Base = automap_base(metadata=metadata)
-        Base.prepare()
-        return Base.classes[name]
-    except PendingRollbackError:
-        connection.rollback()
-        return get_class(name, connection, schema)
+    metadata = sa.MetaData(connection, schema=schema)
+    if isinstance(connection, sa.orm.Session):
+        reflect = connection.connection()
+    else:
+        reflect = connection
+
+    metadata.reflect(reflect, only=[name], schema=schema)
+    Base = automap_base(metadata=metadata)
+    Base.prepare()
+    return Base.classes[name]
 
 
 def get_column(
@@ -179,11 +171,11 @@ def get_column_names(table) -> list[str]:
 
 
 def get_row_count(table, session) -> int:
-    try:
-        col_name = get_column_names(table)[0]
-        col = get_column(table, col_name)
-        return session.execute(sa.func.count(col)).scalar()
-    except PendingRollbackError:
-        session.rollback()
-        return get_row_count(table, session)
+    col_name = get_column_names(table)[0]
+    col = get_column(table, col_name)
+    return session.execute(sa.func.count(col)).scalar()
 
+
+def get_schemas(engine: Engine):
+    insp = sa.inspect(engine)
+    return insp.get_schema_names()

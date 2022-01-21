@@ -102,10 +102,10 @@ class TestSelectRecords(unittest.TestCase):
     def select_records(self, setup_function, schema=None):
         engine, table = setup_function(schema=schema)
         expected = [
-            {'id': 1, 'name': 'Olivia', 'age': 17},
-            {'id': 2, 'name': 'Liam', 'age': 18},
-            {'id': 3, 'name': 'Emma', 'age': 19},
-            {'id': 4, 'name': 'Noah', 'age': 20},
+            {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
+            {'id': 2, 'name': 'Liam', 'age': 18, 'address_id': 1},
+            {'id': 3, 'name': 'Emma', 'age': 19, 'address_id': 2},
+            {'id': 4, 'name': 'Noah', 'age': 20, 'address_id': 2},
         ]
         results = select_records(table, engine, schema=schema, sorted=True)
         self.assertEqual(results, expected)

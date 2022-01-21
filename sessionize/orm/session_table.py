@@ -17,24 +17,28 @@ from sessionize.orm.selection import Selection
 from sessionize.orm.selection import TableSelection
 from sessionize.exceptions import rollback_on_exception
 from sessionize.orm.selection_chaining import selection_chaining
+from sessionize.orm.session_parent import SessionParent
+
 
 @selection_chaining
-class SessionTable:
+class SessionTable(SessionParent):
     def __init__(self, name: str, engine: sa.engine.Engine, schema: Optional[str] = None):
+        SessionParent.__init__(self, engine)
         self.name = name
-        self.engine = engine
         self.schema = schema
-        self.session = Session(engine)
         self.sa_table = get_table(self.name, self.session, self.schema)
         if not has_primary_key(self.sa_table):
             raise MissingPrimaryKey(
-            'sessionize requires sql table to have primary key to work properly.\n' +
+            'Sessionize requires sql table to have a primary key to work properly.\n' +
             'Use sessionize.create_primary_key to add a primary key to your table.')
         # Used when SessionTable is selected (__getitem__, __setitem__, __delitem__)
-        self.table_selection = TableSelection(self)
+        self.table_selection = TableSelection(self, self.name, schema=self.schema)
 
     def __repr__(self) -> str:
         return repr_session_table(self.sa_table, self.session)
+
+    def __iter__(self):
+        return iter(self.table_selection)
 
     def __getitem__(self, key) -> Selection:
         return self.table_selection[key]
@@ -44,15 +48,6 @@ class SessionTable:
 
     def __delitem__(self, key):
         del self.table_selection[key]
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type:
-            self.session.rollback()
-        else:
-            self.commit()
 
     def __len__(self):
         return get_row_count(self.sa_table, self.session)
@@ -85,33 +80,21 @@ class SessionTable:
     def info(self):
         return select_table_info(self.sa_table, self.session)
 
-    def commit(self):
-        self.session.commit()
-
-    def rollback(self):
-        self.session.rollback()
-
-    @rollback_on_exception
     def insert_records(self, records: list[Record]) -> None:
         insert_records_session(self.sa_table, records, self.session, schema=self.schema)
 
-    @rollback_on_exception
     def insert_one_record(self, record: Record) -> None:
         self.insert_records([record])
 
-    @rollback_on_exception
     def update_records(self, records: list[Record]) -> None:
         update_records_session(self.sa_table, records, self.session, schema=self.schema)
 
-    @rollback_on_exception
     def update_one_record(self, record: Record) -> None:
         self.update_records([record])
 
-    @rollback_on_exception
     def delete_records(self, column_name: str, values: list[Any]) -> None:
         delete_records_session(self.sa_table, column_name, values, self.session, schema=self.schema)
 
-    @rollback_on_exception
     def delete_one_record(self, column_name: str, value: Any) -> None:
         self.delete_records(column_name, [value])
 
@@ -119,13 +102,9 @@ class SessionTable:
         return select_records(self.sa_table, self.session, chunksize=chunksize, schema=self.schema)
 
     def head(self, size=5):
-        if size < 0:
-            raise ValueError('size must be a positive number')
         return self[:size]
 
     def tail(self, size=5):
-        if size < 0:
-            raise ValueError('size must be a positive number')
         return self[-size:]
 
 

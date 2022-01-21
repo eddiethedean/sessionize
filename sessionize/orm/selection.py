@@ -1,4 +1,5 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from typing import Optional
 from numbers import Number
 
 from sessionize.utils.custom_types import Record
@@ -13,6 +14,7 @@ from sessionize.utils.select import select_column_values_by_primary_keys
 from sessionize.utils.select import select_primary_key_values
 from sessionize.utils.select import select_value_by_primary_keys
 from sessionize.utils.select import select_records
+from sessionize.utils.select import select_record_by_index
 
 from sessionize.utils.update import update_records_session
 
@@ -23,39 +25,67 @@ from sessionize.utils.delete import delete_record_by_values_session
 
 from sessionize.orm.filter import Filter
 from sessionize.orm.selection_chaining import selection_chaining
+from sessionize.utils.sa_orm import get_table, get_row_count
+
+from sessionize.orm.iterators import TableIterator, SubTableIterator, ColumnIterator, SubColumnIterator
+from sessionize.orm.session_parent import SessionParent
+
 
 
 class Selection:
-    def __init__(self, session_table):
-        self.session_table = session_table
-        self.session = session_table.session
-        self.table_name = session_table.name
-        self.sa_table = session_table.sa_table
+    def __init__(self, parent: SessionParent, table_name: str, schema: Optional[str] = None):
+        self.parent = parent
+        self.session = parent.session
+        self.table_name = table_name
+        self.schema = schema
+        self.sa_table = get_table(table_name, self.session, schema=schema)
+
 
 @selection_chaining
 class TableSelection(Selection):
-    def __init__(self, session_table):
-        Selection.__init__(self, session_table)
+    def __init__(self, parent: SessionParent, table_name: str, schema: Optional[str] = None):
+        Selection.__init__(self, parent, table_name, schema=schema)
 
     def __repr__(self):
-        return f"TableSelection(name='{self.table_name}', records={self.records})"
+        if len(self) == 0:
+            first_record = None
+        else:
+            first_record = select_record_by_index(self.sa_table, self.session, 0)
+        if self.schema is None:
+            return f"TableSelection(name='{self.table_name}', first_record={first_record})"
+        return f"TableSelection(name='{self.table_name}', first_record={first_record}, schema='{self.schema}')"
+
+    def __iter__(self):
+        return TableIterator(self)
+
+    def __len__(self):
+        return get_row_count(self.sa_table, self.session)
+
+    def __add__(self, other):
+        if isinstance(other, Iterable) and not isinstance(other, dict):
+            self.insert(other)
+        else:
+            self.insert([other])
 
     def __getitem__(self, key):
         if isinstance(key, int):
             # TableSelection[index] -> RecordSelection
             primary_key_values = self.get_primary_key_values()
-            return RecordSelection(self.session_table, primary_key_values[key])
+            return RecordSelection(self.parent, primary_key_values[key], self.table_name)
 
         if isinstance(key, slice):
             # TableSelection[slice] -> SubTableSelection
             _slice = key
             primary_key_values = self.get_primary_key_values()
-            return SubTableSelection(self.session_table, primary_key_values[_slice])
+            if _slice.start is None and _slice.stop is None:
+                # TableSelection[:] -> TableSelection
+                return TableSelection(self.parent)
+            return SubTableSelection(self.parent, primary_key_values[_slice], self.table_name)
 
         if isinstance(key, str):
             # TableSelection[column_name] -> ColumnSelection
             column_name = key
-            return ColumnSelection(self.session_table, column_name)
+            return ColumnSelection(self.parent, column_name, self.table_name)
 
         # if isinstance(key, tuple):
         #     raise NotImplemented('tuple selection is not implemented.')
@@ -64,12 +94,12 @@ class TableSelection(Selection):
             # TableSelection[filter] -> SubTableSelection
             filter = key
             primary_keys = self.get_primary_keys_by_filter(filter)
-            return SubTableSelection(self.session_table, primary_keys)
+            return SubTableSelection(self.parent, primary_keys, self.table_name)
 
         if isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
             # TableSelection[column_names] -> TableSubColumnSelection
             column_names = key
-            return TableSubColumnSelection(self.session_table, column_names)
+            return TableSubColumnSelection(self.parent, column_names, self.table_name)
 
         raise NotImplemented('TableSelection only supports selection by int, slice, str, Iterable[bool], and Iterable[str]')
 
@@ -89,8 +119,8 @@ class TableSelection(Selection):
         elif isinstance(key, str):
             # TableSelection[column_name] = value
             column_name = key
-            sub_column_selection = self[column_name]
-            sub_column_selection.update(value)
+            column_selection = self[column_name]
+            column_selection.update(value)
 
         # elif isinstance(key, tuple):
         #     raise NotImplemented('tuple selection is not implemented.')
@@ -123,8 +153,8 @@ class TableSelection(Selection):
 
         elif isinstance(key, str):
             # del TableSelection[column_name]
-            sub_column_selection = self[key]
-            sub_column_selection.delete()
+            column_selection = self[key]
+            column_selection.delete()
 
         # elif isinstance(key, tuple):
         #     raise NotImplemented('tuple selection is not implemented.')
@@ -138,13 +168,22 @@ class TableSelection(Selection):
         elif isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
             # del TableSelection[column_names]
             raise NotImplemented('TableSubColumnSelection deletion is not implemented.')
-
         else:
             raise NotImplemented('TableSelection only supports selection deletion by int, slice, str, and, Iterable[bool]')
 
     @property
     def records(self) -> list:
         return select_records(self.sa_table, self.session)
+
+    def head(self, size=5):
+        if size < 0:
+            raise ValueError('size must be a positive number')
+        return self[:size]
+
+    def tail(self, size=5):
+        if size < 0:
+            raise ValueError('size must be a positive number')
+        return self[-size:]
 
     def get_primary_keys_by_index(self, index: int) -> Record:
         return select_primary_key_record_by_index(self.sa_table, self.session, index)
@@ -172,11 +211,12 @@ class TableSelection(Selection):
         # delete all records in sub table
         delete_records_by_values_session(self.sa_table, self.primary_key_values, self.session)
 
+
 @selection_chaining
 class TableSubColumnSelection(TableSelection):
     # returned when all records are selected but a subset of columns are selected
-    def __init__(self, session_table, column_names: Iterable[str]):
-        TableSelection.__init__(self, session_table)
+    def __init__(self, parent: SessionParent, column_names: Iterable[str], table_name: str):
+        TableSelection.__init__(self, parent, table_name)
         self.column_names = column_names
 
     def __repr__(self):
@@ -191,18 +231,18 @@ class TableSubColumnSelection(TableSelection):
             # TableSubColumnSelection[index] -> SubRecordSelection
             index = key
             primary_key_values = self.get_primary_key_values()
-            return SubRecordSelection(self.session_table, primary_key_values[index], self.column_names)
+            return SubRecordSelection(self.parent, primary_key_values[index], self.column_names)
 
         if isinstance(key, slice):
             # TableSubColumnSelection[slice] -> SubTableSubColumnSelection
             _slice = key
             primary_key_values = self.get_primary_key_values()
-            return SubTableSubColumnSelection(self.session_table, primary_key_values[_slice], self.column_names)
+            return SubTableSubColumnSelection(self.parent, primary_key_values[_slice], self.column_names, self.table_name)
 
         if isinstance(key, str):
             # TableSubColumnSelection[column_name] -> ColumnSelection
             column_name = key
-            return ColumnSelection(self.session_table, column_name)
+            return ColumnSelection(self.parent, column_name, self.table_name)
 
         # if isinstance(key, tuple):
         #     raise NotImplemented('tuple selection is not implemented.')
@@ -211,12 +251,12 @@ class TableSubColumnSelection(TableSelection):
             # TableSubColumnSelection[filter]
             filter = key
             primary_keys = self.get_primary_keys_by_filter(filter)
-            return SubTableSubColumnSelection(self.session_table, primary_keys, self.column_names)
+            return SubTableSubColumnSelection(self.parent, primary_keys, self.column_names, self.table_name)
 
         if isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
             # TableSubColumnSelection[column_names]
             column_names = key
-            return TableSubColumnSelection(self.session_table, column_names)
+            return TableSubColumnSelection(self.parent, column_names, self.table_name)
 
         raise NotImplemented('TableSubColumnSelection only supports selection by int, slice, str, Iterable[bool], and Iterable[str].')
 
@@ -282,12 +322,15 @@ class TableSubColumnSelection(TableSelection):
 @selection_chaining
 class SubTableSelection(TableSelection):
     # returned when a subset of records is selecected
-    def __init__(self, session_table, primary_key_values: list[Record]):
-        TableSelection.__init__(self, session_table)
+    def __init__(self, parent: SessionParent, primary_key_values: list[Record], table_name: str):
+        TableSelection.__init__(self, parent, table_name)
         self.primary_key_values = primary_key_values
 
     def __repr__(self):
         return f"SubTableSelection(name='{self.table_name}', records={self.records})"
+
+    def __iter__(self):
+        return SubTableIterator(self)
 
     def __len__(self):
         return len(self.primary_key_values)
@@ -296,19 +339,19 @@ class SubTableSelection(TableSelection):
         if isinstance(key, int):
             # SubTableSelection[index] -> RecordSelection
             primary_key_values = self.get_primary_key_values()
-            return RecordSelection(self.session_table, primary_key_values[key])
+            return RecordSelection(self.parent, primary_key_values[key])
 
         if isinstance(key, slice):
             # SubTableSelection[slice] -> SubTableSelection
             _slice = key
             primary_key_values = self.get_primary_key_values()
-            return SubTableSelection(self.session_table, primary_key_values[_slice])
+            return SubTableSelection(self.parent, primary_key_values[_slice])
 
         if isinstance(key, str):
             # SubTableSelection[column_name] -> SubColumnSelection
             column_name = key
             primary_key_values = self.get_primary_key_values()
-            return SubColumnSelection(self.session_table, column_name, primary_key_values)
+            return SubColumnSelection(self.parent, column_name, primary_key_values)
 
         # if isinstance(key, tuple):
         #     raise NotImplemented('tuple selection is not implemented.')
@@ -317,12 +360,12 @@ class SubTableSelection(TableSelection):
             # SubTableSelection[filter] -> SubTableSelection
             filter = key
             primary_keys = self.get_primary_keys_by_filter(filter)
-            return SubTableSelection(self.session_table, primary_keys)
+            return SubTableSelection(self.parent, primary_keys)
 
         if isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
             # SubTableSelection[column_names] -> SubTableSubColumnSelection
             column_names = key
-            return SubTableSubColumnSelection(self.session_table, column_names, column_names)
+            return SubTableSubColumnSelection(self.parent, column_names, column_names)
 
         raise NotImplemented('SubTableSelection only supports selection by int, slice, str, Iterable[bool], and Iterable[str].')
 
@@ -410,8 +453,14 @@ class SubTableSelection(TableSelection):
 @selection_chaining
 class SubTableSubColumnSelection(SubTableSelection):
     # returned when a subset of records is selected and a subset of columns is selected
-    def __init__(self, session_table, primary_key_values, column_names):
-        SubTableSelection.__init__(self, session_table, primary_key_values)
+    def __init__(
+        self,
+        parent: SessionParent,
+        primary_key_values: list[Record],
+        column_names: list[str],
+        table_name: str
+    ) -> None:
+        SubTableSelection.__init__(self, parent, primary_key_values, table_name)
         self.column_names = column_names
 
     def __repr__(self):
@@ -421,20 +470,20 @@ class SubTableSubColumnSelection(SubTableSelection):
         if isinstance(key, int):
             # SubTableSubColumnSelection[index] -> SubRecordSelection
             primary_key_values = self.get_primary_key_values()
-            return SubRecordSelection(self.session_table, primary_key_values[key], self.column_names)
+            return SubRecordSelection(self.parent, primary_key_values[key], self.column_names)
 
         if isinstance(key, slice):
             # SubTableSubColumnSelection[slice] -> SubTableSubColumnSelection
             _slice = key
             primary_key_values = self.get_primary_key_values()
-            return SubTableSubColumnSelection(self.session_table, primary_key_values[_slice], self.column_names)
+            return SubTableSubColumnSelection(self.parent, primary_key_values[_slice], self.column_names, self.table_name)
 
         if isinstance(key, str):
             # SubTableSubColumnSelection[column_name] -> SubColumnSelection
             column_name = key
             primary_key_values = self.get_primary_key_values()
             _type = type(self)
-            return SubColumnSelection(self.session_table, column_name, primary_key_values)
+            return SubColumnSelection(self.parent, column_name, primary_key_values, self.table_name)
 
         # if isinstance(key, tuple):
         #     raise NotImplemented('tuple selection is not implemented.')
@@ -443,12 +492,12 @@ class SubTableSubColumnSelection(SubTableSelection):
             # SubTableSubColumnSelection[filter] -> SubTableSubColumnSelection
             filter = key
             primary_keys = self.get_primary_keys_by_filter(filter)
-            return SubTableSubColumnSelection(self.session_table, primary_keys, self.column_names)
+            return SubTableSubColumnSelection(self.parent, primary_keys, self.column_names, self.table_name)
 
         if isinstance(key, Iterable) and all(isinstance(item, str) for item in key):
             # SubTableSubColumnSelection[column_names] -> SubTableSubColumnSelection
             column_names = key
-            return SubTableSubColumnSelection(self.session_table, column_names, column_names)
+            return SubTableSubColumnSelection(self.parent, column_names, column_names, self.table_name)
 
         raise NotImplemented('SubTableSubColumnSelection only supports selection by int, slice, str, Iterable[bool], and Iterable[str].')
 
@@ -462,34 +511,37 @@ class SubTableSubColumnSelection(SubTableSelection):
 @selection_chaining
 class ColumnSelection(Selection):
     # returned when a column is selected
-    def __init__(self, session_table, column_name: str):
-        Selection.__init__(self, session_table)
+    def __init__(self, parent: SessionParent, column_name: str, table_name: str):
+        Selection.__init__(self, parent, table_name)
         self.column_name = column_name
 
     def __repr__(self):
         return f"""ColumnSelection(table_name='{self.table_name}', column_name='{self.column_name}', values={self.values})"""
 
+    def __iter__(self):
+        return ColumnIterator(self)
+
     def __len__(self):
-        return len(self.session_table)
+        return len(self.parent)
 
     def __getitem__(self, key):
         if isinstance(key, int):
             # ColumnSelection[int]
             index = key
             primary_key_values = self.get_primary_key_values()
-            return ValueSelection(self.session_table, self.column_name, primary_key_values[index])
+            return ValueSelection(self.parent, self.column_name, primary_key_values[index])
         
         if isinstance(key, slice):
             # ColumnSelection[slice]
             _slice = key
             primary_key_values = self.get_primary_key_values()
-            return SubColumnSelection(self.session_table, self.column_name, primary_key_values[_slice])
+            return SubColumnSelection(self.parent, self.column_name, primary_key_values[_slice])
 
         if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
             # ColumnSelection[Iterable[bool]]
             filter = key
             primary_key_values = self.get_primary_keys_by_filter(filter)
-            return SubColumnSelection(self.session_table, self.column_name, primary_key_values)
+            return SubColumnSelection(self.parent, self.column_name, primary_key_values)
 
         raise NotImplemented('ColumnSelection only supports selection by int, slice, and Iterable[bool].')
 
@@ -630,12 +682,15 @@ class ColumnSelection(Selection):
 @selection_chaining
 class SubColumnSelection(ColumnSelection):
     # returned when a subset of a column is selecected
-    def __init__(self, session_table, column_name: str, primary_key_values: list[Record]):
-        ColumnSelection.__init__(self, session_table, column_name)
+    def __init__(self, parent: SessionParent, column_name: str, primary_key_values: list[Record], table_name: str):
+        ColumnSelection.__init__(self, parent, column_name, table_name)
         self.primary_key_values = primary_key_values
 
     def __repr__(self):
         return f"SubColumnSelection(table_name='{self.table_name}', column_name='{self.column_name}', values={self.values})"
+
+    def __iter__(self):
+        return SubColumnIterator(self)
 
     def __len__(self):
         return len(self.primary_key_values)
@@ -653,8 +708,8 @@ class SubColumnSelection(ColumnSelection):
 @selection_chaining
 class RecordSelection(Selection):
     # returned when a single record is selected with SessionTable
-    def __init__(self, session_table, primary_key_values: Record):
-        Selection.__init__(self, session_table)
+    def __init__(self, parent: SessionParent, primary_key_values: Record, table_name: str):
+        Selection.__init__(self, parent, table_name)
         self.primary_key_values = primary_key_values
 
     def __repr__(self):
@@ -662,7 +717,7 @@ class RecordSelection(Selection):
 
     def __getitem__(self, key):
         column_name = key
-        return ValueSelection(self.session_table, column_name, self.primary_key_values)
+        return ValueSelection(self.parent, column_name, self.primary_key_values, self.table_name)
 
     def __setitem__(self, key, value):
         column_name = key
@@ -688,8 +743,8 @@ class RecordSelection(Selection):
 
 class SubRecordSelection(Record):
     # returned when a record is selected and a subset of columns is selected
-    def __init__(self, session_table, primary_key_values, column_names):
-        RecordSelection.__init__(self, session_table, primary_key_values)
+    def __init__(self, parent: SessionParent, primary_key_values: Record, column_names: list[str], table_name: str):
+        RecordSelection.__init__(self, parent, primary_key_values, table_name)
         self.column_names = column_names
 
     def __repr__(self):
@@ -705,8 +760,8 @@ class SubRecordSelection(Record):
             
 class ValueSelection(Selection):
     # returned when a single value in a column is selecected
-    def __init__(self, session_table, column_name: str, primary_key_values: Record):
-        Selection.__init__(self, session_table)
+    def __init__(self, parent: SessionParent, column_name: str, primary_key_values: Record, table_name: str):
+        Selection.__init__(self, parent, table_name)
         self.column_name = column_name
         self.primary_key_values = primary_key_values
 

@@ -25,10 +25,10 @@ class TestUpdateRecords(unittest.TestCase):
             update_records_session(table, new_ages, session, schema=schema)
 
         expected = [
-            {'id': 1, 'name': 'Olivia', 'age': 17},
-            {'id': 2, 'name': 'Liam', 'age': 19},
-            {'id': 3, 'name': 'Emma', 'age': 20},
-            {'id': 4, 'name': 'Noah', 'age': 20},
+            {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
+            {'id': 2, 'name': 'Liam', 'age': 19, 'address_id': 1},
+            {'id': 3, 'name': 'Emma', 'age': 20, 'address_id': 2},
+            {'id': 4, 'name': 'Noah', 'age': 20, 'address_id': 2},
         ]
 
         results = select_records(table, engine, schema=schema, sorted=True)

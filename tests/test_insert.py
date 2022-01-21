@@ -15,20 +15,20 @@ class TestInsertRecords(unittest.TestCase):
         engine, table = setup_function(schema=schema)
 
         new_people = [
-            {'name': 'Odos', 'age': 35},
-            {'name': 'Kayla', 'age': 28}
+            {'name': 'Odos', 'age': 35, 'address_id': 2},
+            {'name': 'Kayla', 'age': 28, 'address_id': 2},
         ]
         
         with Session(engine) as session, session.begin():
             insert_records_session(table, new_people, session, schema=schema)
 
         expected = [
-            {'id': 1, 'name': 'Olivia', 'age': 17},
-            {'id': 2, 'name': 'Liam', 'age': 18},
-            {'id': 3, 'name': 'Emma', 'age': 19},
-            {'id': 4, 'name': 'Noah', 'age': 20},
-            {'id': 5, 'name': 'Odos', 'age': 35},
-            {'id': 6, 'name': 'Kayla', 'age': 28}
+            {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
+            {'id': 2, 'name': 'Liam', 'age': 18, 'address_id': 1},
+            {'id': 3, 'name': 'Emma', 'age': 19, 'address_id': 2},
+            {'id': 4, 'name': 'Noah', 'age': 20, 'address_id': 2},
+            {'id': 5, 'name': 'Odos', 'age': 35, 'address_id': 2},
+            {'id': 6, 'name': 'Kayla', 'age': 28, 'address_id': 2}
         ]
 
         results = select_records(table, engine, schema=schema, sorted=True)
@@ -45,11 +45,11 @@ class TestInsertRecords(unittest.TestCase):
         self.insert_records(postgres_setup, schema='local')
 
     def insert_records_session_fails(self, setup_function, schema=None):
-        engine, table = setup_function()
+        engine, table = setup_function(schema=schema)
 
         new_people = [
-            {'name': 'Odos', 'age': 35},
-            {'name': 'Kayla', 'age': 28}
+            {'name': 'Odos', 'age': 35, 'addres_id': 2},
+            {'name': 'Kayla', 'age': 28, 'addres_id': 2},
         ]
         
         try:
@@ -60,10 +60,10 @@ class TestInsertRecords(unittest.TestCase):
             pass
 
         expected = [
-            {'id': 1, 'name': 'Olivia', 'age': 17},
-            {'id': 2, 'name': 'Liam', 'age': 18},
-            {'id': 3, 'name': 'Emma', 'age': 19},
-            {'id': 4, 'name': 'Noah', 'age': 20},
+            {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
+            {'id': 2, 'name': 'Liam', 'age': 18, 'address_id': 1},
+            {'id': 3, 'name': 'Emma', 'age': 19, 'address_id': 2},
+            {'id': 4, 'name': 'Noah', 'age': 20, 'address_id': 2},
         ]
 
         results = select_records(table, engine, schema=schema, sorted=True)

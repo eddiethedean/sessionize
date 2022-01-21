@@ -2,6 +2,7 @@ __version__ = '0.0.7'
 
 # Sessionized
 from sessionize.orm.session_table import SessionTable
+from sessionize.orm.session_db import SessionDatabase
 from sessionize.orm.filter import Filter
 from sessionize.utils.insert import insert_records_session
 from sessionize.utils.delete import delete_records_session, delete_all_records_session
