@@ -11,7 +11,7 @@
 ## Main Features
 Here are just a few of the things that Sessionize does well:
 
-  - Quickly and easily start a SQL session to insert, delete, and update SQL tables.
+  - Quickly and easily start a SQL session to insert, delete, and update records in SQL tables.
   - Roll back any changes durring SQL session inside a context manager.
   - Additional SQL migration functions for changing or adding primary keys, adding or dropping columns, renaming column and more.
 
