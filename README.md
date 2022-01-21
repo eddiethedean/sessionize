@@ -42,9 +42,12 @@ engine = sa.create_engine('sqlite:///foo.db')
 # Create SessionTable to start session of table changes.
 st = SessionTable('people', engine)
 
-# Make changes to SessionTable selections.
+# Make changes to SessionTable:
+# Add 1 to each value in the age column.
 st['age'] + 1
+# Update the first record with new values.
 st[0] = {'id': 1, 'name': 'Olive', 'age': 18}
+# Delete the last record.
 del st[-1]
 
 # Commit SessionTable to push changes to SQL table.
