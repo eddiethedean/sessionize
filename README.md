@@ -1,7 +1,4 @@
-<div align="center">
-  <img src="https://www.dropbox.com/s/gp6dbkyr66foeog/logo_name.svg?dl=0"></img>
-</div>
-
+![Sessionize Logo](https://www.dropbox.com/s/gp6dbkyr66foeog/logo_name.svg?dl=0")
 -----------------
 
 # Sessionize: intutive Python SQL table manipulation toolkit
