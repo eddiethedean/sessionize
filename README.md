@@ -24,7 +24,7 @@ https://github.com/eddiethedean/sessionize
 
 ```sh
 # PyPI
-pip install pandas
+pip install sessionize
 ```
 
 ## Dependencies
