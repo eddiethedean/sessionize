@@ -1,48 +1,43 @@
 from typing import Optional, Union
 
-import sqlalchemy as sa
-from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy.exc import PendingRollbackError
-
-from sessionize.utils.custom_types import Record
-from sessionize.utils.sa_orm import get_class, _get_table
+from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, Record, Table, Engine, Session
+from sessionize.utils.sa_orm import _get_table
 
 
 def insert_from_table_session(
-    table1: Union[sa.Table, str],
-    table2: Union[sa.Table, str],
-    session: sa.orm.Session,
+    sa_table1: Union[Table, str],
+    sa_table2: Union[Table, str],
+    session: Session,
     schema: Optional[str] = None,
 ) -> None:
     """
     Inserts all records from table1 into table2.
     Only add inserts to session. Does not execute.
     """
-    table1 = _get_table(table1, session, schema=schema)
-    table2 = _get_table(table2, session, schema=schema)
-    session.execute(table2.insert().from_select(table1.columns.keys(), table1))
+    table1 = _get_table(sa_table1, session, schema=schema)
+    table2 = _get_table(sa_table2, session, schema=schema)
+    SqlAlchemy.insert_from_table_session(table1, table2, session)
 
 
 def insert_from_table(
-    table1: Union[sa.Table, str],
-    table2: Union[sa.Table, str],
-    engine: sa.engine.Engine,
+    sa_table1: Union[Table, str],
+    sa_table2: Union[Table, str],
+    engine: Engine,
     schema: Optional[str] = None,
 ) -> None:
     """
     Inserts all records from table1 into table2.
     Executes inserts.
     """
-    table1 = _get_table(table1, engine, schema=schema)
-    table2 = _get_table(table2, engine, schema=schema)
-    with sessionmaker(engine).begin() as session:
-        insert_from_table_session(table1, table2, session)
+    table1 = _get_table(sa_table1, engine, schema=schema)
+    table2 = _get_table(sa_table2, engine, schema=schema)
+    SqlAlchemy.insert_from_table(table1, table2, engine)
 
 
 def insert_records_session(
-    table: Union[sa.Table, str],
+    sa_table: Union[Table, str],
     records: list[Record],
-    session: sa.orm.Session,
+    session: Session,
     schema: Optional[str] = None
 ) -> None:
     """
@@ -52,7 +47,7 @@ def insert_records_session(
     
     Parameters
     ----------
-    table: sa.Table
+    sa_table: sa.Table
         SqlAlchemy Table mapped to sql table.
         Use sessionize.engine_utils.get_table to get table.
     records: list[Record]
@@ -70,20 +65,15 @@ def insert_records_session(
     -------
     None
     """
-    engine = session.get_bind()
-    table = _get_table(table, engine, schema=schema)
-    table_name = table.name
-    table_class = get_class(table_name, engine, schema=schema)
-    mapper = sa.inspect(table_class)
-    session.bulk_insert_mappings(mapper, records)
+    table = _get_table(sa_table, session, schema=schema)
+    SqlAlchemy.insert_records_session(table, records, session)
 
 
 def insert_records(
-    table: Union[sa.Table, str],
+    sa_table: Union[Table, str],
     records: list[Record],
-    engine: sa.engine.Engine,
+    engine: Engine,
     schema: Optional[str] = None
 ) -> None:
-    table = _get_table(table, engine, schema=schema)
-    with sessionmaker(engine).begin() as session:
-        insert_records_session(table, records, session, schema)
+    table = _get_table(sa_table, engine, schema=schema)
+    SqlAlchemy.insert_records(table, records, engine)

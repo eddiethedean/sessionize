@@ -5,7 +5,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import PendingRollbackError
 
-from sessionize.utils.custom_types import Record
+from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, Record, SqlConnection, Table, Engine, Column, Session, sql
 from sessionize.utils.sa_orm import get_class, _get_table
 
 

@@ -1,35 +1,29 @@
 from typing import Optional, Union
 
-import sqlalchemy as sa
-from sqlalchemy.engine import Engine
-from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.sql.schema import PrimaryKeyConstraint
-from sqlalchemy.exc import PendingRollbackError
-
-from sessionize.utils.custom_types import SqlConnection
+from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, SqlConnection, Table, Engine, Column, Session, sql
 
 
 def _get_table_name(
-    table: Union[sa.Table, str]
+    table_name: Union[Table, str]
 ) -> str:
-    if isinstance(table, sa.Table):
-        return table.name
-    if isinstance(table, str):
-        return table
+    if isinstance(table_name, Table):
+        return table_name.name
+    if isinstance(table_name, str):
+        return table_name
 
 
 def _get_table(
-    table_name: Union[str, sa.Table],
+    sa_table: Union[str, Table],
     engine: Engine,
     schema: Optional[str] = None
-) -> sa.Table:
-    if isinstance(table_name, sa.Table):
-        return table_name
-    if isinstance(table_name, str):
-        return get_table(table_name, engine, schema=schema)
+) -> Table:
+    if isinstance(sa_table, Table):
+        return sa_table
+    if isinstance(sa_table, str):
+        return get_table(sa_table, engine, schema=schema)
 
 
-def primary_keys(table: sa.Table) -> list[str]:
+def primary_keys(sa_table: Table) -> list[str]:
     """
     Given SqlAlchemy Table, query database for
     columns with primary key constraint.
@@ -37,17 +31,17 @@ def primary_keys(table: sa.Table) -> list[str]:
     
     Parameters
     ----------
-    table: sa.Table
+    sa_table: sa.Table
         SqlAlchemy table mapped to sql table.
     
     Returns
     -------
     list of primary key names.
     """
-    return [c.name for c in table.primary_key.columns.values()]
+    return SqlAlchemy.primary_key_names(sa_table)
 
 
-def has_primary_key(table: sa.Table) -> bool:
+def has_primary_key(sa_table: Table) -> bool:
     """
     Given a SqlAlchemy Table, query database to
     check for primary keys.
@@ -56,28 +50,28 @@ def has_primary_key(table: sa.Table) -> bool:
     
     Parameters
     ----------
-    table: sa.Table
+    sa_table: sa.Table
         SqlAlchemy table mapped to sql table.
     
     Returns
     -------
     bool
     """
-    return len(primary_keys(table)) != 0
+    return len(primary_keys(sa_table)) != 0
 
 
 def get_table(
-    name: str,
+    table_name: str,
     connection: SqlConnection,
     schema: Optional[str] = None
-) -> sa.Table:
+) -> Table:
     """
     Maps a SqlAlchemy Table to a sql table.
     Returns SqlAlchemy Table object.
     
     Parameters
     ----------
-    name: str
+    table_name: str
         name of sql table to map.
     connection: sa.engine.Engine, sa.orm.Session, or sa.engine.Connection
         connection used to query database.
@@ -88,23 +82,11 @@ def get_table(
     -------
     A SqlAlchemy mapped Table object.
     """
-    metadata = sa.MetaData(bind=connection, schema=schema)
-
-    if isinstance(connection, sa.orm.Session):
-        autoload_with = connection.connection()
-    else:
-        autoload_with = connection
-
-    return sa.Table(name,
-                metadata,
-                autoload=True,
-                autoload_with=autoload_with,
-                extend_existing=True,
-                schema=schema)
+    return SqlAlchemy.get_table(table_name, connection, schema)
 
 
 def get_class(
-    name: str,
+    table_name: str,
     connection: SqlConnection,
     schema: Optional[str] = None
 ):
@@ -117,7 +99,7 @@ def get_class(
     
     Parameters
     ----------
-    name: str
+    table_name: str
         name of sql table to map.
     connection: sa.engine.Engine, sa.orm.Session, or sa.engine.Connection
         connection used to query database.
@@ -128,54 +110,39 @@ def get_class(
     -------
     A SqlAlchemy table class object.
     """
-    metadata = sa.MetaData(connection, schema=schema)
-    if isinstance(connection, sa.orm.Session):
-        reflect = connection.connection()
-    else:
-        reflect = connection
-
-    metadata.reflect(reflect, only=[name], schema=schema)
-    Base = automap_base(metadata=metadata)
-    Base.prepare()
-    return Base.classes[name]
+    return SqlAlchemy.get_class(table_name, connection, schema)
 
 
 def get_column(
-    table: str,
+    sa_table: Table,
     column_name: str
-) -> sa.Column:
-    return table.c[column_name]
+) -> Column:
+    return SqlAlchemy.get_column(sa_table, column_name)
 
 
 def get_primary_key_constraints(
-    table: sa.Table
+    sa_table: Table
 ) -> tuple[str, list[str]]:
     """
         Returns dictionary of primary key constraint names
         and list of column names per contraint.
     """
-    cons = table.constraints
-    for con in cons:
-        if isinstance(con, PrimaryKeyConstraint):
-            return con.name, [col.name for col in con.columns]
+    return SqlAlchemy.get_primary_key_constraints(sa_table)
 
 
-def get_column_types(table) -> dict[str, sa.sql.sqltypes]:
+def get_column_types(sa_table: Table) -> dict[str, sql.sqltypes]:
     """Returns dict of table column names:sql_type
     """
-    return {c.name: c.type for c in table.c}
+    return SqlAlchemy.get_column_types(sa_table)
 
 
-def get_column_names(table) -> list[str]:
-    return [c.name for c in table.columns]
+def get_column_names(sa_table: Table) -> list[str]:
+    return SqlAlchemy.get_column_names(sa_table)
 
 
-def get_row_count(table, session) -> int:
-    col_name = get_column_names(table)[0]
-    col = get_column(table, col_name)
-    return session.execute(sa.func.count(col)).scalar()
+def get_row_count(sa_table: Table, session: Session) -> int:
+    return SqlAlchemy.get_row_count(sa_table, session)
 
 
 def get_schemas(engine: Engine):
-    insp = sa.inspect(engine)
-    return insp.get_schema_names()
+    return SqlAlchemy.get_schemas(engine)

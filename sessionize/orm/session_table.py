@@ -2,27 +2,24 @@ from typing import Any, Optional, Union
 from dataclasses import dataclass
 from collections.abc import Iterable
 
-from sqlalchemy.orm import Session
-import sqlalchemy as sa
-
 from sessionize.utils.delete import delete_records_session
 from sessionize.utils.insert import insert_records_session
 from sessionize.utils.update import update_records_session
 from sessionize.utils.select import select_first_record, select_records, select_records_all
 from sessionize.utils.sa_orm import get_table, has_primary_key, get_column_names
 from sessionize.utils.sa_orm import get_column_types, get_row_count, primary_keys
-from sessionize.utils.custom_types import Record, SqlConnection
 from sessionize.exceptions import MissingPrimaryKey
 from sessionize.orm.selection import Selection
 from sessionize.orm.selection import TableSelection
-from sessionize.exceptions import rollback_on_exception
 from sessionize.orm.selection_chaining import selection_chaining
 from sessionize.orm.session_parent import SessionParent
+
+from sessionize.sa_versions.sa_1_4_29.sa import SqlConnection, Record, Engine, Table, sql
 
 
 @selection_chaining
 class SessionTable(SessionParent):
-    def __init__(self, name: str, engine: sa.engine.Engine, schema: Optional[str] = None):
+    def __init__(self, name: str, engine: Engine, schema: Optional[str] = None):
         SessionParent.__init__(self, engine)
         self.name = name
         self.schema = schema
@@ -111,14 +108,14 @@ class SessionTable(SessionParent):
 @dataclass
 class TableInfo():
     name: str
-    types: dict[str, sa.sql.sqltypes]
+    types: dict[str, sql.sqltypes]
     row_count: int
     keys: list[str]
     first_record: Record
     schema: Optional[str] = None
 
 
-def select_table_info(table: sa.Table, connection: SqlConnection) -> TableInfo:
+def select_table_info(table: Table, connection: SqlConnection) -> TableInfo:
     types = get_column_types(table)
     row_count = get_row_count(table, connection)
     keys = primary_keys(table)
@@ -127,15 +124,15 @@ def select_table_info(table: sa.Table, connection: SqlConnection) -> TableInfo:
 
 
 def repr_session_table(
-    table: sa.Table,
+    sa_table: Table,
     connection: SqlConnection
 ) -> str:
-    table_info = select_table_info(table, connection)
+    table_info = select_table_info(sa_table, connection)
     types = table_info.types
     row_count = table_info.row_count
     keys = table_info.keys
     first_record = table_info.first_record
-    name = table.name if table.schema is None else f"{table.name}', schema='{table.schema}"
+    name = sa_table.name if sa_table.schema is None else f"{sa_table.name}', schema='{sa_table.schema}"
     return f"""SessionTable(name='{name}', keys={keys}, row_count={row_count},
              first_record={first_record},
              sql_data_types={types})"""

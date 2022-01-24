@@ -1,5 +1,4 @@
-from sqlalchemy.orm import Session
-
+from sessionize.sa_versions.sa_1_4_29.sa import Session
 
 class SessionParent:
     def __init__(self, engine):

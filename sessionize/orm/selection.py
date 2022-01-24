@@ -1,8 +1,8 @@
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 from typing import Optional
 from numbers import Number
 
-from sessionize.utils.custom_types import Record
+from sessionize.sa_versions.sa_1_4_29.sa import Record
 
 from sessionize.utils.select import select_primary_key_record_by_index
 from sessionize.utils.select import select_primary_key_records_by_slice
@@ -29,7 +29,6 @@ from sessionize.utils.sa_orm import get_table, get_row_count
 
 from sessionize.orm.iterators import TableIterator, SubTableIterator, ColumnIterator, SubColumnIterator
 from sessionize.orm.session_parent import SessionParent
-
 
 
 class Selection:

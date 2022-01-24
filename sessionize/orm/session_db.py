@@ -1,6 +1,4 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import inspect
-
+from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy
 from sessionize.orm.selection import TableSelection
 from sessionize.orm.session_parent import SessionParent
 from sessionize.utils.sa_orm import get_schemas
@@ -29,11 +27,11 @@ class SessionDatabase(SessionParent):
 
     def table_names(self, schema=None):
         if schema is not None:
-            names = inspect(self.engine).get_table_names(schema)
+            names = SqlAlchemy.get_table_names(self.engine, schema)
             return [f'{schema}.{name}' for name in names]
         out = []
         for schema in get_schemas(self.engine):
-            names = inspect(self.engine).get_table_names(schema)
+            names = SqlAlchemy.get_table_names(self.engine, schema)
             names = [f'{schema}.{name}' for name in names]
             out.extend(names)
         return out
