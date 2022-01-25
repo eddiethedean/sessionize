@@ -1,14 +1,11 @@
 from typing import Optional, Union
 
-import sqlalchemy as sa
-from sqlalchemy.orm import Session
-
-from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, Record, SqlConnection, Table, Engine, Column, Session, sql
+from sessionize.sa_versions.sa_1_4_29.sa import Record, Table, Session
 from sessionize.utils.sa_orm import _get_table
 
 # TODO: finish insert_update_records_session function
 def insert_update_records_session(
-    table: Union[sa.Table, str],
+    table: Union[Table, str],
     records: list[Record],
     session: Session,
     schema: Optional[str] = None

@@ -1,18 +1,13 @@
 from typing import Optional, Union
 
-import sqlalchemy as sa
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import PendingRollbackError
-
-from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, Record, SqlConnection, Table, Engine, Column, Session, sql
-from sessionize.utils.sa_orm import get_class, _get_table
+from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, Record, Engine, Table, Session
+from sessionize.utils.sa_orm import _get_table
 
 
 def update_records_session(
-    table: Union[sa.Table, str],
+    table: Union[Table, str],
     records: list[Record],
-    session: sa.orm.session.Session,
+    session: Session,
     schema: Optional[str] = None
 ) -> None:
     """
@@ -41,19 +36,15 @@ def update_records_session(
     -------
     None
     """
-    engine = session.get_bind()
-    table = _get_table(table, engine, schema=schema)
-    table_name = table.name
-    table_class = get_class(table_name, engine, schema=schema)
-    mapper = sa.inspect(table_class)
-    session.bulk_update_mappings(mapper, records)
+    table = _get_table(table, session, schema=schema)
+    SqlAlchemy.update_records_session(table, records, session)
 
 
 def update_records(
-    table: Union[sa.Table, str],
+    sa_table: Union[Table, str],
     records: list[Record],
     engine: Engine,
     schema: Optional[str] = None
 ) -> None:
-    with Session(engine) as session, session.begin():
-        update_records_session(table, records, session, schema)
+    table = _get_table(sa_table, engine, schema=schema)
+    SqlAlchemy.update_records(table, records, engine)

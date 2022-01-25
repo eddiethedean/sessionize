@@ -1,14 +1,13 @@
 from typing import Union, Optional
 
-import sqlalchemy as sa
-from sqlalchemy.engine import Engine
 from alembic.runtime.migration import MigrationContext
 from alembic.operations import Operations
 
+from sessionize.sa_versions.sa_1_4_29.sa import Table, Engine, Column
 from sessionize.utils.sa_orm import get_table, get_primary_key_constraints
 from sessionize.utils.insert import insert_from_table
 from sessionize.utils.drop import drop_table
-from sessionize.utils.type_convert import _type_convert
+from sessionize.sa_versions.sa_1_4_29.type_convert import _type_convert
 from sessionize.utils.sa_orm import _get_table, _get_table_name
 
 
@@ -21,12 +20,12 @@ def _get_op(
 
 
 def rename_column(
-    table_name: Union[str, sa.Table],
+    table_name: Union[str, Table],
     old_col_name: str,
     new_col_name: str,
     engine: Engine,
     schema: Optional[str] = None
-) -> sa.Table:
+) -> Table:
     """
         Renames a table column.
 
@@ -40,11 +39,11 @@ def rename_column(
 
 
 def drop_column(
-    table_name: Union[str, sa.Table],
+    table_name: Union[str, Table],
     col_name: str,
     engine: Engine,
     schema: Optional[str] = None
-) -> sa.Table:
+) -> Table:
     """
         Drops a table column.
 
@@ -58,26 +57,26 @@ def drop_column(
 
 
 def add_column(
-    table_name: Union[str, sa.Table],
+    table_name: Union[str, Table],
     column_name: str,
     dtype: type,
     engine: Engine,
     schema: Optional[str] = None
-) -> sa.Table:
+) -> Table:
     table_name = _get_table_name(table_name)
     sa_type = _type_convert[dtype]
     op = _get_op(engine)
-    col = sa.Column(column_name, sa_type)
+    col = Column(column_name, sa_type)
     op.add_column(table_name, col, schema=schema)
     return get_table(table_name, engine, schema=schema)
 
 
 def rename_table(
-    old_table_name: Union[str, sa.Table],
+    old_table_name: Union[str, Table],
     new_table_name: str,
     engine: Engine,
     schema: Optional[str] = None
-) -> sa.Table:
+) -> Table:
     """
         Renames a table.
 
@@ -90,12 +89,12 @@ def rename_table(
 
 
 def copy_table(
-    table: Union[sa.Table, str],
+    table: Union[Table, str],
     new_table_name: str,
     engine: Engine,
     if_exists: str = 'replace',
     schema: Optional[str] = None
-) -> sa.Table:
+) -> Table:
     """
         Creates a copy of the given table with new_table_name.
         Drops a table with same new_table_name if_exists='replace'
@@ -113,11 +112,11 @@ def copy_table(
 
 
 def replace_primary_key(
-    table: Union[sa.Table, str],
+    table: Union[Table, str],
     column_name: str,
     engine: Engine,
     schema: Optional[str] = None
-)-> sa.Table:
+)-> Table:
     """
         Drops primary key from table columns
         then adds primary key to column_name of table.
@@ -143,11 +142,11 @@ def replace_primary_key(
 
 
 def create_primary_key(
-    table_name: Union[str, sa.Table],
+    table_name: Union[str, Table],
     column_name: str,
     engine: Engine,
     schema: Optional[str] = None
-) -> sa.Table:
+) -> Table:
     """
         Adds a primary key constraint to table.
         Only use on a table with no primary key.
@@ -165,11 +164,11 @@ def create_primary_key(
 
 
 def name_primary_key(
-    table_name: Union[str, sa.Table],
+    table_name: Union[str, Table],
     column_name: str,
     engine: Engine,
     schema: Optional[str] = None
-) -> sa.Table:
+) -> Table:
     """
         Names the primary key constraint for a given sql table column.
 

@@ -1,9 +1,8 @@
 import unittest
 
-from sqlalchemy.orm import Session
-
+from sessionize.sa_versions.sa_1_4_29.sa import Session
+from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.delete import delete_records_session
-from sessionize.utils.setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 

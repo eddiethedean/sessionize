@@ -1,9 +1,7 @@
 import unittest
 
-from sqlalchemy import inspect, Table, INTEGER, VARCHAR
-from sqlalchemy.exc import OperationalError, ProgrammingError
-
-from sessionize.utils.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa_versions.sa_1_4_29.sa import OperationalError, ProgrammingError, VARCHAR, INTEGER, inspect, Table
+from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.create import create_table
 from sessionize.utils.sa_orm import get_column_types, get_primary_key_constraints
 

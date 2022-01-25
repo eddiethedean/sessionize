@@ -1,17 +1,21 @@
 """
 All SqlAlchemy functionality used in Sessionize is defined here.
 """
-
 from typing import Optional, Any, Union, Generator
+
 from sqlalchemy import PrimaryKeyConstraint, Table, Column, MetaData
+from sqlalchemy.schema import DropTable, CreateTable
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy import sql, func, inspect, select
 from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.sql.elements import and_, or_
 from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy.exc import OperationalError, ProgrammingError, NoSuchTableError
+from sqlalchemy import VARCHAR, INTEGER
 
 from sessionize.exceptions import MissingPrimaryKey, SliceError
+from sessionize.sa_versions.sa_1_4_29.type_convert import _type_convert
 
 
 Record = dict[str, Any]
@@ -472,6 +476,77 @@ class SqlAlchemy:
             query = select(cls.get_column(sa_table, column_name)).where((and_(*where_clause)))
             return connection.execute(query).scalars().all()[0]
 
+    @classmethod
+    def update_records_session(
+        cls,
+        sa_table: Table,
+        records: list[Record],
+        session: Session
+    ) -> None:
+        table_name = sa_table.name
+        table_class = cls.get_class(table_name, session, schema=sa_table.schema)
+        mapper = inspect(table_class)
+        session.bulk_update_mappings(mapper, records)
+
+    @classmethod
+    def update_records(
+        cls,
+        sa_table: Table,
+        records: list[Record],
+        engine: Engine
+    ) -> None:
+        with Session(engine) as session, session.begin():
+            cls.update_records_session(sa_table, records, session)
+
+    @classmethod
+    def create_table(
+        cls,
+        table_name: str,
+        column_names: list[str],
+        column_types: list[type],
+        primary_key: str,
+        engine: Engine,
+        schema: Optional[str] = None,
+        autoincrement: Optional[bool] = True,
+        if_exists: Optional[str] = 'error'
+    ) -> Table:
+        
+        cols = []
+        
+        for name, python_type in zip(column_names, column_types):
+            sa_type = _type_convert[python_type]
+            if name == primary_key:
+                col = Column(name, sa_type,
+                             primary_key=True,
+                             autoincrement=autoincrement)
+            else:
+                col = Column(name, sa_type)
+            cols.append(col)
+
+        metadata = MetaData(engine)
+        table = Table(table_name, metadata, *cols, schema=schema)
+        if if_exists == 'replace':
+            drop_table_sql = DropTable(table, if_exists=True)
+            engine.execute(drop_table_sql)
+        table_creation_sql = CreateTable(table)
+        engine.execute(table_creation_sql)
+        return cls.get_table(table_name, engine, schema=schema)
+
+    @classmethod
+    def drop_table(
+        cls,
+        table: Union[Table, str],
+        engine: Engine,
+        if_exists: Optional[bool] = True,
+        schema: Optional[str] = None
+    ) -> None:
+        if isinstance(table, str):
+            if table not in inspect(engine).get_table_names(schema=schema):
+                if if_exists:
+                    return
+            table = cls.get_table(table, engine, schema=schema)
+        sql = DropTable(table, if_exists=if_exists)
+        engine.execute(sql)
 
 
 def _calc_positive_index(index: int, row_count: int) -> int:

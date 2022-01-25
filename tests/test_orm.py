@@ -1,6 +1,6 @@
 import unittest
 
-from sessionize.utils.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
 from sessionize.orm.session_table import SessionTable
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail

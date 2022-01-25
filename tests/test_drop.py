@@ -1,9 +1,7 @@
 import unittest
 
-from sqlalchemy import inspect
-from sqlalchemy.exc import NoSuchTableError
-
-from sessionize.utils.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa_versions.sa_1_4_29.sa import inspect, NoSuchTableError
+from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.drop import drop_table
 
 

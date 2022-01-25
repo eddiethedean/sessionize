@@ -14,15 +14,14 @@ from contextlib import contextmanager
 @contextmanager
 def Session(*args, **kwargs):
     Session = scoped_session(sessionmaker(
-        bind=create_engine(*args, **kwargs)))
-
+        bind = create_engine(*args, **kwargs)))
     try:
         session = Session()
         yield session
         session.commit()
-    except:
+    except Exception as e:
         session.rollback()
-        raise
+        raise e
     finally:
         session.close()
 
