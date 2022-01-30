@@ -1,7 +1,9 @@
 import unittest
 
-from sessionize.sa_versions.sa_1_4_29.sa import Session
-from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa import Session
+from sessionize.sa import sqlite_setup, postgres_setup
+from sessionize.utils.sa_orm import get_table
+
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 from sessionize.utils.update import update_records_session
@@ -13,15 +15,17 @@ class TestUpdateRecords(unittest.TestCase):
         """
         Test that update_record_sesssion works
         """
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         new_ages = [
             {'id': 2, 'name': 'Liam', 'age': 19},
             {'id': 3, 'name': 'Emma', 'age': 20}
         ]
         
-        with Session(engine) as session, session.begin():
-            update_records_session(table, new_ages, session, schema=schema)
+        session = Session(engine)
+        update_records_session(table, new_ages, session, schema=schema)
+        session.commit()
 
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},

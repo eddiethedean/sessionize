@@ -3,11 +3,10 @@ from typing import Union, Optional
 from alembic.runtime.migration import MigrationContext
 from alembic.operations import Operations
 
-from sessionize.sa_versions.sa_1_4_29.sa import Table, Engine, Column
+from sessionize.sa import Table, Engine, Column, _type_convert
 from sessionize.utils.sa_orm import get_table, get_primary_key_constraints
 from sessionize.utils.insert import insert_from_table
 from sessionize.utils.drop import drop_table
-from sessionize.sa_versions.sa_1_4_29.type_convert import _type_convert
 from sessionize.utils.sa_orm import _get_table, _get_table_name
 
 

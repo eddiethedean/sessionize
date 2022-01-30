@@ -1,14 +1,13 @@
 from typing import Optional
 
-from sqlalchemy import create_engine, Table, ForeignKey
+from sqlalchemy import create_engine, Table
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm.session import Session
 from sqlalchemy import Column, Integer, String
 
 from creds import postgres_url, mysql_url
-from sessionize.utils.sa_orm import get_table, get_schemas
 
 
 def setup(connection_string: str, schema: Optional[str] = None) -> tuple[Engine, Table]:
@@ -40,12 +39,8 @@ def setup(connection_string: str, schema: Optional[str] = None) -> tuple[Engine,
         if schema is not None:
             __table_args__ = {'schema': schema}
 
-    Base.metadata.reflect(bind=engine)
+    Base.metadata.reflect(bind=engine, schema=schema)
     Base.metadata.drop_all(bind=engine)
-    for sch in get_schemas(engine):
-        Base.metadata.reflect(bind=engine, schema=sch)
-        Base.metadata.drop_all(bind=engine)
-    Base.metadata.reflect(bind=engine, schema=sch)
     Base.metadata.create_all(bind=engine, tables=[People.__table__, Places.__table__])
 
     people = [
@@ -64,7 +59,7 @@ def setup(connection_string: str, schema: Optional[str] = None) -> tuple[Engine,
         session.add_all(people)
         session.add_all(places)
    
-    return engine, get_table('people', engine, schema=schema)
+    return engine
 
 
 def sqlite_setup(path='sqlite:///data/test.db', schema=None) -> tuple[Engine, Table]:

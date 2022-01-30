@@ -1,6 +1,6 @@
 from typing import Optional, Union
 
-from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, SqlConnection, Table, Engine, Column, Session, sql
+from sessionize.sa import SqlAlchemy, SqlConnection, Table, Engine, Column, Session, sql
 
 
 def _get_table_name(

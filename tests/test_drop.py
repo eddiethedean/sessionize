@@ -1,13 +1,15 @@
 import unittest
 
-from sessionize.sa_versions.sa_1_4_29.sa import inspect, NoSuchTableError
-from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa import inspect, NoSuchTableError
+from sessionize.sa import sqlite_setup, postgres_setup
 from sessionize.utils.drop import drop_table
+from sessionize.utils.sa_orm import get_table
 
 
 class TestDropTable(unittest.TestCase):
     def drop_table(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         drop_table(table.name, engine, schema=schema)
 
@@ -27,7 +29,7 @@ class TestDropTable(unittest.TestCase):
         self.drop_table(postgres_setup, schema='local')
 
     def drop_table_fail(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
         with self.assertRaises(NoSuchTableError):
             drop_table('this_table_does_not_exist', engine, if_exists=False, schema=schema)
 

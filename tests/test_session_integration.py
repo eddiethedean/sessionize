@@ -1,7 +1,8 @@
 import unittest
 
-from sessionize.sa_versions.sa_1_4_29.sa import Session
-from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa import Session
+from sessionize.sa import sqlite_setup, postgres_setup
+from sessionize.utils.sa_orm import get_table
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 from sessionize.utils.insert import insert_records_session
@@ -16,7 +17,8 @@ from sessionize.utils.delete import delete_records_session
 
 class TestCombined(unittest.TestCase):
     def insert_update(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         new_people = [
             {'name': 'Odos', 'age': 35, 'address_id': 2},
@@ -28,9 +30,10 @@ class TestCombined(unittest.TestCase):
             {'id': 3, 'name': 'Emma', 'age': 20}
         ]
         
-        with Session(engine) as session, session.begin():
-            insert_records_session(table, new_people, session, schema=schema)
-            update_records_session(table, new_ages, session, schema=schema)
+        session = Session(engine)
+        insert_records_session(table, new_people, session, schema=schema)
+        update_records_session(table, new_ages, session, schema=schema)
+        session.commit()
 
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
@@ -55,7 +58,8 @@ class TestCombined(unittest.TestCase):
         self.insert_update(postgres_setup, schema='local')
 
     def delete_update_fail(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         new_ages = [
             {'id': 2, 'name': 'Liam', 'age': 19},
@@ -63,11 +67,12 @@ class TestCombined(unittest.TestCase):
         ]
 
         try:
-            with Session(engine) as session, session.begin():
-                delete_records_session(table, 'id', [2, 3], session, schema=schema)
-                update_records_session(table, new_ages, session, schema=schema)
+            session = Session(engine)
+            delete_records_session(table, 'id', [2, 3], session, schema=schema)
+            update_records_session(table, new_ages, session, schema=schema)
+            session.commit()
         except:
-            pass
+            session.rollback()
 
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
@@ -90,16 +95,18 @@ class TestCombined(unittest.TestCase):
         self.delete_update_fail(postgres_setup, schema='local')
 
     def update_delete(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         new_ages = [
             {'id': 2, 'name': 'Liam', 'age': 19},
             {'id': 3, 'name': 'Emma', 'age': 20}
         ]
 
-        with Session(engine) as session, session.begin():
-            update_records_session(table, new_ages, session, schema=schema)
-            delete_records_session(table, 'id', [2, 3], session, schema=schema)
+        session = Session(engine)
+        update_records_session(table, new_ages, session, schema=schema)
+        delete_records_session(table, 'id', [2, 3], session, schema=schema)
+        session.commit()
             
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
@@ -120,7 +127,8 @@ class TestCombined(unittest.TestCase):
         self.update_delete(postgres_setup, schema='local')
 
     def delete_insert_update(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         new_people = [
             {'name': 'Odos', 'age': 35, 'address_id': 2},
@@ -132,10 +140,11 @@ class TestCombined(unittest.TestCase):
             {'id': 4, 'name': 'Noah', 'age': 21}
         ]
 
-        with Session(engine) as session, session.begin():
-            delete_records_session(table, 'id', [2, 3], session, schema=schema)
-            insert_records_session(table, new_people, session, schema=schema)
-            update_records_session(table, new_ages, session, schema=schema)
+        session = Session(engine)
+        delete_records_session(table, 'id', [2, 3], session, schema=schema)
+        insert_records_session(table, new_people, session, schema=schema)
+        update_records_session(table, new_ages, session, schema=schema)
+        session.commit()
             
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 18, 'address_id': 1},

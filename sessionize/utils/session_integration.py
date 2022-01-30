@@ -1,6 +1,6 @@
 from typing import Optional, Union
 
-from sessionize.sa_versions.sa_1_4_29.sa import Record, Table, Session
+from sessionize.sa import Record, Table, Session
 from sessionize.utils.sa_orm import _get_table
 
 # TODO: finish insert_update_records_session function

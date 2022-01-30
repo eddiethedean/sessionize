@@ -14,7 +14,7 @@ from sessionize.orm.selection import TableSelection
 from sessionize.orm.selection_chaining import selection_chaining
 from sessionize.orm.session_parent import SessionParent
 
-from sessionize.sa_versions.sa_1_4_29.sa import SqlConnection, Record, Engine, Table, sql
+from sessionize.sa import SqlConnection, Record, Engine, Table, sql
 
 
 @selection_chaining

@@ -1,6 +1,6 @@
 from typing import Optional, Union
 
-from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, Record, Table, Engine, Session
+from sessionize.sa import SqlAlchemy, Record, Table, Engine, Session
 from sessionize.utils.sa_orm import _get_table
 
 

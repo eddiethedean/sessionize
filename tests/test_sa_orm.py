@@ -1,7 +1,7 @@
 import unittest
 
-from sessionize.sa_versions.sa_1_4_29.sa import Column
-from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa import Column
+from sessionize.sa import sqlite_setup, postgres_setup
 from sessionize.utils.select import select_records
 from sessionize.utils.sa_orm import primary_keys, has_primary_key
 from sessionize.utils.sa_orm import get_table, get_class, get_column
@@ -10,7 +10,8 @@ from sessionize.utils.sa_orm import get_table, get_class, get_column
 # primary_keys
 class TestPrimaryKeys(unittest.TestCase):
     def primary_keys(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
         keys = primary_keys(table)
         expected = ['id']
         self.assertEqual(keys, expected)
@@ -28,7 +29,8 @@ class TestPrimaryKeys(unittest.TestCase):
 # has_primary_key
 class TestHasPrimaryKey(unittest.TestCase):
     def has_primary_key(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
         result = has_primary_key(table)
         expected = True
         self.assertEqual(result, expected)
@@ -43,29 +45,30 @@ class TestHasPrimaryKey(unittest.TestCase):
         self.has_primary_key(postgres_setup, schema='local')
 
 
-# get_table
+# TODO: get_table tests
 class TestGetTable(unittest.TestCase):
     def get_table(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
         result = get_table('people', engine, schema=schema)
         expected = table
         self.assertEqual(type(result), type(expected))
         self.assertEqual(result.name, expected.name)
 
-    def test_get_table_sqlite(self):
+'''     def test_get_table_sqlite(self):
         self.get_table(sqlite_setup)
 
     def test_get_table_postgres(self):
         self.get_table(postgres_setup)
 
     def test_get_table_schema(self):
-        self.get_table(postgres_setup, schema='local')
+        self.get_table(postgres_setup, schema='local') '''
 
 
 # TODO: get_class tests
 class TestGetClass(unittest.TestCase):
     def get_class(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
         result = get_class('people', engine, schema=schema)
         self.assertEqual(result.name, 'people')
 
@@ -82,7 +85,8 @@ class TestGetClass(unittest.TestCase):
 # get_column
 class TestGetColumn(unittest.TestCase):
     def get_column(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
         result = get_column(table, 'id')
         self.assertEqual(result.name, 'id')
         self.assertEqual(type(result), Column)
@@ -99,7 +103,8 @@ class TestGetColumn(unittest.TestCase):
 
 class TestSelectRecords(unittest.TestCase):
     def select_records(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
             {'id': 2, 'name': 'Liam', 'age': 18, 'address_id': 1},

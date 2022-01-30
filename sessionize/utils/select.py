@@ -2,7 +2,7 @@
 from typing import Optional, Any, Union, Generator
 
 from sessionize.utils.sa_orm import _get_table, get_row_count, primary_keys
-from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, Record, SqlConnection, Table
+from sessionize.sa import SqlAlchemy, Record, SqlConnection, Table
 
 
 def select_records(

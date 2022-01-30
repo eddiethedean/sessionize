@@ -1,14 +1,16 @@
 import unittest
 
-from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa import sqlite_setup, postgres_setup
 from sessionize.orm.session_table import SessionTable
+from sessionize.utils.sa_orm import get_table
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 
 
 class TestSessionTable(unittest.TestCase):
     def insert_delete_update_records(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         new_records = [
             {'name': 'Odos', 'age': 35, 'address_id': 2},
@@ -51,7 +53,8 @@ class TestSessionTable(unittest.TestCase):
         self.insert_delete_update_records(postgres_setup, schema='local')
 
     def insert_delete_update_records_fail(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine  = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         new_records = [
             {'name': 'Odos', 'age': 35, 'address_id': 2},

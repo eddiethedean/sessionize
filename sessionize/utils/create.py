@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, Table, Engine
+from sessionize.sa import SqlAlchemy, Table, Engine
 
 
 def create_table(

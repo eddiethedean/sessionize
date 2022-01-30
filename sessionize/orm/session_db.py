@@ -1,4 +1,4 @@
-from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy
+from sessionize.sa import SqlAlchemy
 from sessionize.orm.selection import TableSelection
 from sessionize.orm.session_parent import SessionParent
 from sessionize.utils.sa_orm import get_schemas

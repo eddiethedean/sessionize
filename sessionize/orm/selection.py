@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from typing import Optional
 from numbers import Number
 
-from sessionize.sa_versions.sa_1_4_29.sa import Record
+from sessionize.sa import Record
 
 from sessionize.utils.select import select_primary_key_record_by_index
 from sessionize.utils.select import select_primary_key_records_by_slice
@@ -15,18 +15,13 @@ from sessionize.utils.select import select_primary_key_values
 from sessionize.utils.select import select_value_by_primary_keys
 from sessionize.utils.select import select_records
 from sessionize.utils.select import select_record_by_index
-
 from sessionize.utils.update import update_records_session
-
 from sessionize.utils.insert import insert_records_session
-
 from sessionize.utils.delete import delete_records_by_values_session
 from sessionize.utils.delete import delete_record_by_values_session
-
 from sessionize.orm.filter import Filter
 from sessionize.orm.selection_chaining import selection_chaining
 from sessionize.utils.sa_orm import get_table, get_row_count
-
 from sessionize.orm.iterators import TableIterator, SubTableIterator, ColumnIterator, SubColumnIterator
 from sessionize.orm.session_parent import SessionParent
 

@@ -5,17 +5,18 @@ from typing import Optional, Any, Union, Generator
 
 from sqlalchemy import PrimaryKeyConstraint, Table, Column, MetaData
 from sqlalchemy.schema import DropTable, CreateTable
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy import sql, func, inspect, select
 from sqlalchemy.engine import Engine, Connection
 from sqlalchemy.sql.elements import and_, or_
-from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy.exc import OperationalError, ProgrammingError, NoSuchTableError
+from sqlalchemy.orm.session import sessionmaker, Session
+
+# External dependencies
+from sqlalchemy.exc import NoSuchTableError, OperationalError, ProgrammingError
 from sqlalchemy import VARCHAR, INTEGER
 
 from sessionize.exceptions import MissingPrimaryKey, SliceError
-from sessionize.sa_versions.sa_1_4_29.type_convert import _type_convert
+from sessionize.sa_versions.sa_1_4.type_convert import _type_convert
 
 
 Record = dict[str, Any]
@@ -23,11 +24,11 @@ SqlConnection = Union[Engine, Session, Connection]
 
 
 class SqlAlchemy:
-    __version__ = '1.4.29'
+    __version__ = '1'
 
     @staticmethod
     def primary_key_columns(sa_table: Table) -> list[Column]:
-        return sa_table.primary_key.columns.values()
+        return list(sa_table.primary_key.columns)
     
     @classmethod
     def primary_key_names(cls, sa_table: Table) -> list[str]:
@@ -170,17 +171,27 @@ class SqlAlchemy:
         values: list,
         engine: Engine
     ) -> None:
-        with Session(engine) as session, session.begin():
+        try:
+            session = Session(engine)
             cls.delete_records_session(sa_table, col_name, values, session)
-
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+            
     @staticmethod
     def delete_all_records_session(table: Table, session: Session) -> None:
         session.query(table).delete()
 
     @classmethod
     def delete_all_records(cls, sa_table: Table, engine: Engine) -> None:
-        with Session(engine) as session, session.begin():
+        try:
+            session = Session(engine)
             cls.delete_all_records_session(sa_table, session)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
 
     @staticmethod
     def insert_from_table_session(sa_table1: Table, sa_table2: Table, session: Session) -> None:
@@ -193,8 +204,13 @@ class SqlAlchemy:
         sa_table2: Table,
         engine: Engine
     ) -> None:
-        with sessionmaker(engine).begin() as session:
+        try:
+            session = Session(engine)
             cls.insert_from_table_session(sa_table1, sa_table2, session)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
 
     @classmethod
     def insert_records_session(
@@ -214,8 +230,13 @@ class SqlAlchemy:
         records: list[Record],
         engine: Engine
     ) -> None:
-        with sessionmaker(engine).begin() as session:
+        try:
+            session = Session(engine)
             cls.insert_records_session(sa_table, records, session)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
 
     @classmethod
     def select_records_all(
@@ -495,8 +516,13 @@ class SqlAlchemy:
         records: list[Record],
         engine: Engine
     ) -> None:
-        with Session(engine) as session, session.begin():
+        try:
+            session = Session(engine)
             cls.update_records_session(sa_table, records, session)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
 
     @classmethod
     def create_table(

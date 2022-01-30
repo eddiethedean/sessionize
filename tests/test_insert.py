@@ -1,7 +1,8 @@
 import unittest
 
-from sessionize.sa_versions.sa_1_4_29.sa import Session
-from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa import Session
+from sessionize.sa import sqlite_setup, postgres_setup
+from sessionize.utils.sa_orm import get_table
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 from sessionize.utils.insert import insert_records_session
@@ -11,7 +12,8 @@ from sessionize.utils.insert import insert_records_session
 class TestInsertRecords(unittest.TestCase):
 
     def insert_records(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         new_people = [
             {'name': 'Odos', 'age': 35, 'address_id': 2},
@@ -44,7 +46,8 @@ class TestInsertRecords(unittest.TestCase):
         self.insert_records(postgres_setup, schema='local')
 
     def insert_records_session_fails(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
 
         new_people = [
             {'name': 'Odos', 'age': 35, 'addres_id': 2},
@@ -52,10 +55,12 @@ class TestInsertRecords(unittest.TestCase):
         ]
         
         try:
-            with Session(engine) as session, session.begin():
-                insert_records_session(table, new_people, session, schema=schema)
-                raise ForceFail
+            session = Session(engine)
+            insert_records_session(table, new_people, session, schema=schema)
+            raise ForceFail
+            session.commit()
         except ForceFail:
+            session.rollback()
             pass
 
         expected = [

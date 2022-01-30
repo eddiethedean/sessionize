@@ -1,8 +1,9 @@
 import unittest
 
-from sessionize.sa_versions.sa_1_4_29.sa import Session
-from sessionize.sa_versions.sa_1_4_29.setup_test import sqlite_setup, postgres_setup
+from sessionize.sa import Session
+from sessionize.sa import sqlite_setup, postgres_setup
 from sessionize.utils.delete import delete_records_session
+from sessionize.utils.sa_orm import get_table
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 
@@ -11,10 +12,12 @@ from sessionize.exceptions import ForceFail
 class TestDeleteRecords(unittest.TestCase):
 
     def delete_records(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
         
-        with Session(engine) as session, session.begin():
-            delete_records_session(table, 'id', [2, 3], session, schema=schema)
+        session = Session(engine)
+        delete_records_session(table, 'id', [2, 3], session, schema=schema)
+        session.commit()
 
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},
@@ -35,13 +38,16 @@ class TestDeleteRecords(unittest.TestCase):
         self.delete_records(postgres_setup, schema='local')
 
     def delete_records_session_fails(self, setup_function, schema=None):
-        engine, table = setup_function(schema=schema)
+        engine = setup_function(schema=schema)
+        table = get_table('people', engine, schema=schema)
         
         try:
-            with Session(engine) as session, session.begin():
-                delete_records_session(table, 'id', [1, 2], session, schema=schema)
-                raise ForceFail
+            session = Session(engine)
+            delete_records_session(table, 'id', [1, 2], session, schema=schema)
+            raise ForceFail
+            session.commit()
         except ForceFail:
+            session.rollback()
             pass
 
         expected = [

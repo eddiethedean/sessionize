@@ -1,7 +1,7 @@
 from typing import Union, Optional
 
 from sessionize.utils.sa_orm import _get_table
-from sessionize.sa_versions.sa_1_4_29.sa import SqlAlchemy, Record, Table, Session, Engine
+from sessionize.sa import SqlAlchemy, Record, Table, Session, Engine
 
 
 def delete_records_session(

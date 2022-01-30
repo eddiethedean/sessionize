@@ -1,4 +1,5 @@
-from sessionize.sa_versions.sa_1_4_29.sa import Session
+from sessionize.sa import Session
+
 
 class SessionParent:
     def __init__(self, engine):
@@ -11,6 +12,7 @@ class SessionParent:
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type:
             self.session.rollback()
+            raise exc_value
         else:
             self.commit()
 
