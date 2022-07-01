@@ -3,11 +3,15 @@ from typing import Union, Optional
 from alembic.runtime.migration import MigrationContext
 from alembic.operations import Operations
 
-from sessionize.sa import Table, Engine, Column, _type_convert
+# TODO: replace with interfaces
+from sqlalchemy import Table, Column
+from sqlalchemy.engine import Engine
+
 from sessionize.utils.sa_orm import get_table, get_primary_key_constraints
 from sessionize.utils.insert import insert_from_table
 from sessionize.utils.drop import drop_table
 from sessionize.utils.sa_orm import _get_table, _get_table_name
+from sessionize.sa.type_convert import _type_convert
 
 
 def _get_op(
@@ -135,8 +139,9 @@ def replace_primary_key(
         else:
             constraint_name = keys[0]
         batch_op.drop_constraint(constraint_name, type_='primary')
-        batch_op.create_primary_key(f'pk_{table_name}', [column_name])
         batch_op.create_unique_constraint(constraint_name, table_name, [column_name])
+        batch_op.create_primary_key(constraint_name, [column_name])
+        
     return get_table(table_name, engine)
 
 
@@ -153,12 +158,13 @@ def create_primary_key(
 
         Returns newly reflected SqlAlchemy Table.
     """
-    table_name = _get_table_name(table_name, schema=schema)
+    table_name = _get_table_name(table_name)
     op = _get_op(engine)
     with op.batch_alter_table(table_name, schema=schema) as batch_op:
         constraint_name = f'pk_{table_name}'
+        batch_op.create_unique_constraint(constraint_name, [column_name])
         batch_op.create_primary_key(constraint_name, [column_name])
-        batch_op.create_unique_constraint(constraint_name, table_name, [column_name])
+        
     return get_table(table_name, engine, schema=schema)
 
 

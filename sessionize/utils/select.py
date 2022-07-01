@@ -1,8 +1,12 @@
 
 from typing import Optional, Any, Union, Generator
 
+# TODO: replace with interface
+from sqlalchemy import Table
+
 from sessionize.utils.sa_orm import _get_table, get_row_count, primary_keys
-from sessionize.sa import SqlAlchemy, Record, SqlConnection, Table
+from sessionize.sa import sa_functions
+from sessionize.sa.sa_functions import Record, SqlConnection
 
 
 def select_records(
@@ -61,7 +65,7 @@ def select_records_all(
     list of sql table records.
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_records_all(table, connection, sorted, include_columns)
+    return sa_functions.select_records_all(table, connection, sorted, include_columns)
 
 
 def select_records_chunks(
@@ -90,7 +94,7 @@ def select_records_chunks(
     Generator of lists of sql table records.
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_records_chunks(table, connection, chunksize, sorted, include_columns)
+    return sa_functions.select_records_chunks(table, connection, chunksize, sorted, include_columns)
 
 
 def select_existing_values(
@@ -119,7 +123,7 @@ def select_existing_values(
     List of matching values.
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_existing_values(table, connection, column_name, values)
+    return sa_functions.select_existing_values(table, connection, column_name, values)
 
 
 def select_column_values(
@@ -182,7 +186,7 @@ def select_column_values_all(
     list of sql table column values.
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_column_values_all(table, connection, column_name)
+    return sa_functions.select_column_values_all(table, connection, column_name)
 
 
 def select_column_values_chunks(
@@ -212,7 +216,7 @@ def select_column_values_chunks(
     Generator of chunksized lists of sql table column values.
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_column_values_chunks(table, connection, column_name, chunksize)
+    return sa_functions.select_column_values_chunks(table, connection, column_name, chunksize)
 
 
 def select_records_slice(
@@ -238,7 +242,7 @@ def select_records_slice(
 
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_records_slice(table, connection, start, stop, sorted, include_columns)
+    return sa_functions.select_records_slice(table, connection, start, stop, sorted, include_columns)
 
 
 def select_record_by_index(
@@ -256,7 +260,7 @@ def select_record_by_index(
         row_count = get_row_count(table, connection)
         if index < -row_count:
             raise IndexError('Index out of range.') 
-        index = SqlAlchemy._calc_positive_index(index, row_count)
+        index = sa_functions._calc_positive_index(index, row_count)
     records = select_records_slice(table, connection, index, index+1, include_columns=include_columns)
     if len(records) == 0:
         raise IndexError('Index out of range.')
@@ -292,7 +296,7 @@ def select_column_values_by_slice(
     Select a subset of column values by slice.
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_column_values_by_slice(table, connection, column_name, start, stop)
+    return sa_functions.select_column_values_by_slice(table, connection, column_name, start, stop)
 
 
 def select_column_value_by_index(
@@ -306,7 +310,7 @@ def select_column_value_by_index(
     Select a column value by index.
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_column_value_by_index(table, connection, column_name, index)
+    return sa_functions.select_column_value_by_index(table, connection, column_name, index)
 
 
 def select_primary_key_records_by_slice(
@@ -320,7 +324,7 @@ def select_primary_key_records_by_slice(
     Select primary key values by slice.
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_primary_key_records_by_slice(table, connection, _slice, sorted)
+    return sa_functions.select_primary_key_records_by_slice(table, connection, _slice, sorted)
 
 
 def select_primary_key_values(
@@ -346,7 +350,7 @@ def select_primary_key_record_by_index(
         row_count = get_row_count(table, connection)
         if index < -row_count:
             raise IndexError('Index out of range.') 
-        index = SqlAlchemy._calc_positive_index(index, row_count)
+        index = sa_functions._calc_positive_index(index, row_count)
     return select_primary_key_records_by_slice(table, connection, slice(index, index+1))[0]
 
 
@@ -403,7 +407,7 @@ def select_record_by_primary_key(
     Select a record by primary key values
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_record_by_primary_key(table, connection, primary_key_value, include_columns)
+    return sa_functions.select_record_by_primary_key(table, connection, primary_key_value, include_columns)
 
 
 def select_records_by_primary_keys(
@@ -417,7 +421,7 @@ def select_records_by_primary_keys(
     Select the records that match the primary key values
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_records_by_primary_keys(table, connection, primary_keys_values, include_columns)
+    return sa_functions.select_records_by_primary_keys(table, connection, primary_keys_values, include_columns)
 
 
 def select_column_values_by_primary_keys(
@@ -429,7 +433,7 @@ def select_column_values_by_primary_keys(
     """
     Select multiple values from a column by primary key values
     """
-    return SqlAlchemy.select_column_values_by_primary_keys(sa_table, connection, column_name, primary_keys_values)
+    return sa_functions.select_column_values_by_primary_keys(sa_table, connection, column_name, primary_keys_values)
 
 
 def select_value_by_primary_keys(
@@ -443,4 +447,4 @@ def select_value_by_primary_keys(
     Select a single value from a column by primary key values
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return SqlAlchemy.select_value_by_primary_keys(table, connection, column_name, primary_key_value)
+    return sa_functions.select_value_by_primary_keys(table, connection, column_name, primary_key_value)

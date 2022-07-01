@@ -1,7 +1,8 @@
 import unittest
 
-from sessionize.sa import Session
-from sessionize.sa import sqlite_setup, postgres_setup
+import sqlalchemy.orm.session as sa_session
+
+from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 from sessionize.utils.alter import rename_column, drop_column, add_column

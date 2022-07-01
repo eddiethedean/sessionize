@@ -1,9 +1,9 @@
 import unittest
 
-from sessionize.sa import Session
-from sessionize.sa import sqlite_setup, postgres_setup
-from sessionize.utils.sa_orm import get_table
+import sqlalchemy.orm.session as sa_session
 
+from setup_test import sqlite_setup, postgres_setup
+from sessionize.utils.sa_orm import get_table
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 from sessionize.utils.update import update_records_session
@@ -23,7 +23,7 @@ class TestUpdateRecords(unittest.TestCase):
             {'id': 3, 'name': 'Emma', 'age': 20}
         ]
         
-        session = Session(engine)
+        session = sa_session.Session(engine)
         update_records_session(table, new_ages, session, schema=schema)
         session.commit()
 

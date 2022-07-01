@@ -1,6 +1,11 @@
 from typing import Optional, Union
 
-from sessionize.sa import SqlAlchemy, Record, Engine, Table, Session
+from sqlalchemy import Table
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm.session import Session
+
+from sessionize.sa.sa_functions import Record
+from sessionize.sa import sa_functions
 from sessionize.utils.sa_orm import _get_table
 
 
@@ -37,7 +42,7 @@ def update_records_session(
     None
     """
     table = _get_table(table, session, schema=schema)
-    SqlAlchemy.update_records_session(table, records, session)
+    sa_functions.update_records_session(table, records, session)
 
 
 def update_records(
@@ -47,4 +52,4 @@ def update_records(
     schema: Optional[str] = None
 ) -> None:
     table = _get_table(sa_table, engine, schema=schema)
-    SqlAlchemy.update_records(table, records, engine)
+    sa_functions.update_records(table, records, engine)

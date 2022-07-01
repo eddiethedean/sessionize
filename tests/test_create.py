@@ -1,7 +1,9 @@
 import unittest
 
-from sessionize.sa import OperationalError, ProgrammingError, VARCHAR, INTEGER, inspect, Table
-from sessionize.sa import sqlite_setup, postgres_setup
+import sqlalchemy as sa
+import sqlalchemy.exc as sa_exc
+
+from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.create import create_table
 from sessionize.utils.sa_orm import get_column_types, get_primary_key_constraints, get_table
 
@@ -14,13 +16,13 @@ class TestCreateTable(unittest.TestCase):
         types = [int, str, int]
         new_table = create_table('test_people', cols, types, 'id', engine, schema)
 
-        table_names = inspect(engine).get_table_names(schema=schema)
+        table_names = sa.inspect(engine).get_table_names(schema=schema)
         col_types = get_column_types(new_table)
-        expected = {'id': INTEGER(), 'name': VARCHAR(), 'age': INTEGER()}
+        expected = {'id': sa.INTEGER(), 'name': sa.VARCHAR(), 'age': sa.INTEGER()}
         _, keys = get_primary_key_constraints(new_table)
 
         self.assertIn('test_people', table_names)
-        self.assertIs(type(new_table), Table)
+        self.assertIs(type(new_table), sa.Table)
         self.assertIs(type(col_types['id']), type(expected['id']))
         self.assertIs(type(col_types['name']), type(expected['name']))
         self.assertIs(type(col_types['age']), type(expected['age']))
@@ -46,11 +48,11 @@ class TestCreateTable(unittest.TestCase):
             create_table(table.name, cols, types, 'id', engine, schema, if_exists='error')
 
     def test_create_table_error_sqlite(self):
-        self.create_table_error(sqlite_setup, OperationalError)
+        self.create_table_error(sqlite_setup, sa_exc.OperationalError)
 
     def test_create_table_error_postgres(self):
-        self.create_table_error(postgres_setup, ProgrammingError)
+        self.create_table_error(postgres_setup, sa_exc.ProgrammingError)
 
     def test_create_table_error_schema(self):
-        self.create_table_error(postgres_setup, ProgrammingError, schema='local')
+        self.create_table_error(postgres_setup, sa_exc.ProgrammingError, schema='local')
 

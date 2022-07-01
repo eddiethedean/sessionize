@@ -1,7 +1,8 @@
 import unittest
 
-from sessionize.sa import Session
-from sessionize.sa import sqlite_setup, postgres_setup
+import sqlalchemy.orm.session as sa_session
+
+from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.delete import delete_records_session
 from sessionize.utils.sa_orm import get_table
 from sessionize.utils.select import select_records
@@ -15,7 +16,7 @@ class TestDeleteRecords(unittest.TestCase):
         engine = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         
-        session = Session(engine)
+        session = sa_session.Session(engine)
         delete_records_session(table, 'id', [2, 3], session, schema=schema)
         session.commit()
 
@@ -42,7 +43,7 @@ class TestDeleteRecords(unittest.TestCase):
         table = get_table('people', engine, schema=schema)
         
         try:
-            session = Session(engine)
+            session = sa_session.Session(engine)
             delete_records_session(table, 'id', [1, 2], session, schema=schema)
             raise ForceFail
             session.commit()

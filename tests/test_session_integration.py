@@ -1,7 +1,8 @@
 import unittest
 
-from sessionize.sa import Session
-from sessionize.sa import sqlite_setup, postgres_setup
+import sqlalchemy.orm.session as sa_session
+
+from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.sa_orm import get_table
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
@@ -30,7 +31,7 @@ class TestCombined(unittest.TestCase):
             {'id': 3, 'name': 'Emma', 'age': 20}
         ]
         
-        session = Session(engine)
+        session = sa_session.Session(engine)
         insert_records_session(table, new_people, session, schema=schema)
         update_records_session(table, new_ages, session, schema=schema)
         session.commit()
@@ -67,7 +68,7 @@ class TestCombined(unittest.TestCase):
         ]
 
         try:
-            session = Session(engine)
+            session = sa_session.Session(engine)
             delete_records_session(table, 'id', [2, 3], session, schema=schema)
             update_records_session(table, new_ages, session, schema=schema)
             session.commit()
@@ -103,7 +104,7 @@ class TestCombined(unittest.TestCase):
             {'id': 3, 'name': 'Emma', 'age': 20}
         ]
 
-        session = Session(engine)
+        session = sa_session.Session(engine)
         update_records_session(table, new_ages, session, schema=schema)
         delete_records_session(table, 'id', [2, 3], session, schema=schema)
         session.commit()
@@ -140,7 +141,7 @@ class TestCombined(unittest.TestCase):
             {'id': 4, 'name': 'Noah', 'age': 21}
         ]
 
-        session = Session(engine)
+        session = sa_session.Session(engine)
         delete_records_session(table, 'id', [2, 3], session, schema=schema)
         insert_records_session(table, new_people, session, schema=schema)
         update_records_session(table, new_ages, session, schema=schema)

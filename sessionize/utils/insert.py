@@ -1,6 +1,12 @@
 from typing import Optional, Union
 
-from sessionize.sa import SqlAlchemy, Record, Table, Engine, Session
+# TODO: replace with interfaces
+from sqlalchemy import Table
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm.session import Session
+
+from sessionize.sa import sa_functions
+from sessionize.sa.sa_functions import Record
 from sessionize.utils.sa_orm import _get_table
 
 
@@ -16,7 +22,7 @@ def insert_from_table_session(
     """
     table1 = _get_table(sa_table1, session, schema=schema)
     table2 = _get_table(sa_table2, session, schema=schema)
-    SqlAlchemy.insert_from_table_session(table1, table2, session)
+    sa_functions.insert_from_table_session(table1, table2, session)
 
 
 def insert_from_table(
@@ -31,7 +37,7 @@ def insert_from_table(
     """
     table1 = _get_table(sa_table1, engine, schema=schema)
     table2 = _get_table(sa_table2, engine, schema=schema)
-    SqlAlchemy.insert_from_table(table1, table2, engine)
+    sa_functions.insert_from_table(table1, table2, engine)
 
 
 def insert_records_session(
@@ -66,7 +72,7 @@ def insert_records_session(
     None
     """
     table = _get_table(sa_table, session, schema=schema)
-    SqlAlchemy.insert_records_session(table, records, session)
+    sa_functions.insert_records_session(table, records, session)
 
 
 def insert_records(
@@ -76,4 +82,4 @@ def insert_records(
     schema: Optional[str] = None
 ) -> None:
     table = _get_table(sa_table, engine, schema=schema)
-    SqlAlchemy.insert_records(table, records, engine)
+    sa_functions.insert_records(table, records, engine)

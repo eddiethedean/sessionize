@@ -1,7 +1,8 @@
 import unittest
 
-from sessionize.sa import Session
-from sessionize.sa import sqlite_setup, postgres_setup
+import sqlalchemy.orm.session as sa_session
+
+from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.sa_orm import get_table
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
@@ -20,7 +21,7 @@ class TestInsertRecords(unittest.TestCase):
             {'name': 'Kayla', 'age': 28, 'address_id': 2},
         ]
         
-        with Session(engine) as session, session.begin():
+        with sa_session.Session(engine) as session, session.begin():
             insert_records_session(table, new_people, session, schema=schema)
 
         expected = [
@@ -55,7 +56,7 @@ class TestInsertRecords(unittest.TestCase):
         ]
         
         try:
-            session = Session(engine)
+            session = sa_session.Session(engine)
             insert_records_session(table, new_people, session, schema=schema)
             raise ForceFail
             session.commit()

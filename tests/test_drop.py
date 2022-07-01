@@ -1,7 +1,9 @@
 import unittest
 
-from sessionize.sa import inspect, NoSuchTableError
-from sessionize.sa import sqlite_setup, postgres_setup
+import sqlalchemy as sa
+import sqlalchemy.exc as sa_exc
+
+from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.drop import drop_table
 from sessionize.utils.sa_orm import get_table
 
@@ -13,7 +15,7 @@ class TestDropTable(unittest.TestCase):
 
         drop_table(table.name, engine, schema=schema)
 
-        table_names = inspect(engine).get_table_names(schema=schema)
+        table_names = sa.inspect(engine).get_table_names(schema=schema)
 
         exists = table.name in table_names
 
@@ -30,7 +32,7 @@ class TestDropTable(unittest.TestCase):
 
     def drop_table_fail(self, setup_function, schema=None):
         engine = setup_function(schema=schema)
-        with self.assertRaises(NoSuchTableError):
+        with self.assertRaises(sa_exc.NoSuchTableError):
             drop_table('this_table_does_not_exist', engine, if_exists=False, schema=schema)
 
     def test_drop_table_fail_sqlite(self):

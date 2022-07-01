@@ -1,10 +1,10 @@
-from sessionize.sa import Session
+import sqlalchemy.orm.session as sa_session
 
 
 class SessionParent:
     def __init__(self, engine):
         self.engine = engine
-        self.session = Session(engine)
+        self.session = sa_session.Session(engine)
 
     def __enter__(self):
         return self

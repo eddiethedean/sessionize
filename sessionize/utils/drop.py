@@ -1,6 +1,10 @@
 from typing import Optional, Union
 
-from sessionize.sa import SqlAlchemy, Engine, Table
+# TODO: replace with interfaces
+from sqlalchemy import Table
+from sqlalchemy.engine import Engine
+
+from sessionize.sa import sa_functions
 
 
 def drop_table(
@@ -9,4 +13,4 @@ def drop_table(
     if_exists: Optional[bool] = True,
     schema: Optional[str] = None
 ) -> None:
-    SqlAlchemy.drop_table(table, engine, if_exists, schema)
+    sa_functions.drop_table(table, engine, if_exists, schema)

@@ -1,6 +1,12 @@
 from typing import Optional, Union
 
-from sessionize.sa import SqlAlchemy, SqlConnection, Table, Engine, Column, Session, sql
+# TODO: replace with interfaces
+from sqlalchemy import Table, Column, sql
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm.session import Session
+
+from sessionize.sa.sa_functions import SqlConnection
+from sessionize.sa import sa_functions
 
 
 def _get_table_name(
@@ -38,7 +44,7 @@ def primary_keys(sa_table: Table) -> list[str]:
     -------
     list of primary key names.
     """
-    return SqlAlchemy.primary_key_names(sa_table)
+    return sa_functions.primary_key_names(sa_table)
 
 
 def has_primary_key(sa_table: Table) -> bool:
@@ -82,7 +88,7 @@ def get_table(
     -------
     A SqlAlchemy mapped Table object.
     """
-    return SqlAlchemy.get_table(table_name, connection, schema)
+    return sa_functions.get_table(table_name, connection, schema)
 
 
 def get_class(
@@ -110,14 +116,14 @@ def get_class(
     -------
     A SqlAlchemy table class object.
     """
-    return SqlAlchemy.get_class(table_name, connection, schema)
+    return sa_functions.get_class(table_name, connection, schema)
 
 
 def get_column(
     sa_table: Table,
     column_name: str
 ) -> Column:
-    return SqlAlchemy.get_column(sa_table, column_name)
+    return sa_functions.get_column(sa_table, column_name)
 
 
 def get_primary_key_constraints(
@@ -127,22 +133,22 @@ def get_primary_key_constraints(
         Returns dictionary of primary key constraint names
         and list of column names per contraint.
     """
-    return SqlAlchemy.get_primary_key_constraints(sa_table)
+    return sa_functions.get_primary_key_constraints(sa_table)
 
 
-def get_column_types(sa_table: Table) -> dict[str, sql.sqltypes]:
+def get_column_types(sa_table: Table):
     """Returns dict of table column names:sql_type
     """
-    return SqlAlchemy.get_column_types(sa_table)
+    return sa_functions.get_column_types(sa_table)
 
 
 def get_column_names(sa_table: Table) -> list[str]:
-    return SqlAlchemy.get_column_names(sa_table)
+    return sa_functions.get_column_names(sa_table)
 
 
 def get_row_count(sa_table: Table, session: Session) -> int:
-    return SqlAlchemy.get_row_count(sa_table, session)
+    return sa_functions.get_row_count(sa_table, session)
 
 
 def get_schemas(engine: Engine):
-    return SqlAlchemy.get_schemas(engine)
+    return sa_functions.get_schemas(engine)

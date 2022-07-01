@@ -2,8 +2,7 @@ from collections.abc import Iterable
 from typing import Optional
 from numbers import Number
 
-from sessionize.sa import Record
-
+from sessionize.sa.sa_functions import Record
 from sessionize.utils.select import select_primary_key_record_by_index
 from sessionize.utils.select import select_primary_key_records_by_slice
 from sessionize.utils.select import select_records_by_primary_keys

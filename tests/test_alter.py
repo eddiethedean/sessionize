@@ -1,12 +1,14 @@
 import unittest
 
-from sessionize.sa import OperationalError, ProgrammingError, VARCHAR, inspect
-from sessionize.sa import sqlite_setup, postgres_setup
+from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.select import select_records
 from sessionize.utils.sa_orm import get_table, get_column
 from sessionize.exceptions import ForceFail
 from sessionize.utils.alter import rename_column, drop_column, add_column, rename_table
 from sessionize.utils.alter import copy_table, replace_primary_key, name_primary_key
+
+import sqlalchemy as sa
+import sqlalchemy.exc as sa_exc
 
 
 # rename_column
@@ -38,10 +40,10 @@ class TestRenameColumn(unittest.TestCase):
         self.raise_key_error(sqlite_setup, KeyError)
 
     def test_rename_column_key_error_postgres(self):
-        self.raise_key_error(postgres_setup, ProgrammingError)
+        self.raise_key_error(postgres_setup, sa_exc.ProgrammingError)
 
     def test_rename_column_key_error_schema(self):
-        self.raise_key_error(postgres_setup, ProgrammingError, schema='local')
+        self.raise_key_error(postgres_setup, sa_exc.ProgrammingError, schema='local')
 
     def raise_operational_error(self, setup_function, error, schema=None):
         engine = setup_function(schema=schema)
@@ -50,13 +52,13 @@ class TestRenameColumn(unittest.TestCase):
             rename_column(table.name, 'name', 'age', engine, schema=schema)
 
     def test_rename_column_op_error_sqlite(self):
-        self.raise_operational_error(sqlite_setup, OperationalError)
+        self.raise_operational_error(sqlite_setup, sa_exc.OperationalError)
 
     def test_rename_column_op_error_postgres(self):
-        self.raise_operational_error(postgres_setup, ProgrammingError)
+        self.raise_operational_error(postgres_setup, sa_exc.ProgrammingError)
 
     def test_rename_column_op_error_schema(self):
-        self.raise_operational_error(postgres_setup, ProgrammingError, schema='local')
+        self.raise_operational_error(postgres_setup, sa_exc.ProgrammingError, schema='local')
 
 # drop_column
 class TestDropColumn(unittest.TestCase):
@@ -87,10 +89,10 @@ class TestDropColumn(unittest.TestCase):
         self.raise_key_error(sqlite_setup, KeyError)
 
     def test_drop_column_key_error_postgres(self):
-        self.raise_key_error(postgres_setup, ProgrammingError)
+        self.raise_key_error(postgres_setup, sa_exc.ProgrammingError)
 
     def test_drop_column_key_error_schema(self):
-        self.raise_key_error(postgres_setup, ProgrammingError, schema='local')
+        self.raise_key_error(postgres_setup, sa_exc.ProgrammingError, schema='local')
     
 
 # add_column
@@ -101,7 +103,7 @@ class TestAddColumn(unittest.TestCase):
         table = add_column(table.name, 'last_name', str, engine, schema=schema)
         cols = set(table.columns.keys())
         self.assertSetEqual(cols, {'id', 'age', 'name', 'address_id', 'last_name'})
-        self.assertIs(VARCHAR, type(get_column(table, 'last_name').type))
+        self.assertIs(sa.VARCHAR, type(get_column(table, 'last_name').type))
 
     def test_add_column_sqlite(self):
         self.add_column(sqlite_setup)
@@ -119,13 +121,13 @@ class TestAddColumn(unittest.TestCase):
             add_column(table.name, 'name', str, engine, schema=schema)
 
     def test_add_column_op_error_sqlite(self):
-        self.raise_operational_error(sqlite_setup, OperationalError)
+        self.raise_operational_error(sqlite_setup, sa_exc.OperationalError)
 
     def test_add_column_op_error_postgres(self):
-        self.raise_operational_error(postgres_setup, ProgrammingError)
+        self.raise_operational_error(postgres_setup, sa_exc.ProgrammingError)
 
     def test_add_column_op_error_schema(self):
-        self.raise_operational_error(postgres_setup, ProgrammingError, schema='local')
+        self.raise_operational_error(postgres_setup, sa_exc.ProgrammingError, schema='local')
 
 
 class TestRenameTable(unittest.TestCase):
@@ -133,11 +135,11 @@ class TestRenameTable(unittest.TestCase):
         engine = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         new_table_name = 'employees'
-        table_names = inspect(engine).get_table_names(schema=schema)
+        table_names = sa.inspect(engine).get_table_names(schema=schema)
         table_names.remove(table.name)
         table = rename_table(table.name, new_table_name, engine, schema=schema)
         table_names.append(new_table_name)
-        new_table_names = inspect(engine).get_table_names(schema=schema)
+        new_table_names = sa.inspect(engine).get_table_names(schema=schema)
         self.assertSetEqual(set(table_names), set(new_table_names))
 
     def test_rename_table_sqlite(self):
@@ -157,13 +159,13 @@ class TestRenameTable(unittest.TestCase):
             rename_table(table.name, new_table_name, engine, schema=schema)
 
     def test_rename_table_fail_sqlite(self):
-        self.raise_key_error(sqlite_setup, OperationalError)
+        self.raise_key_error(sqlite_setup, sa_exc.OperationalError)
 
     def test_rename_table_fail_postgres(self):
-        self.raise_key_error(postgres_setup, ProgrammingError)
+        self.raise_key_error(postgres_setup, sa_exc.ProgrammingError)
 
     def test_rename_table_fail_schema(self):
-        self.raise_key_error(postgres_setup, ProgrammingError, schema='local')
+        self.raise_key_error(postgres_setup, sa_exc.ProgrammingError, schema='local')
 
 
 # TODO: copy_table tests
@@ -172,10 +174,10 @@ class TestCopyTable(unittest.TestCase):
         engine = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         new_table_name = 'employees'
-        table_names = inspect(engine).get_table_names(schema=schema)
+        table_names = sa.inspect(engine).get_table_names(schema=schema)
         copy_table(table.name, new_table_name, engine, schema=schema)
         table_names.append(new_table_name)
-        new_table_names = inspect(engine).get_table_names(schema=schema)
+        new_table_names = sa.inspect(engine).get_table_names(schema=schema)
         self.assertSetEqual(set(table_names), set(new_table_names))
 
     def test_copy_table_sqlite(self):

@@ -2,6 +2,9 @@ from typing import Any, Optional, Union
 from dataclasses import dataclass
 from collections.abc import Iterable
 
+import sqlalchemy as sa
+import sqlalchemy.engine as sa_engine
+
 from sessionize.utils.delete import delete_records_session
 from sessionize.utils.insert import insert_records_session
 from sessionize.utils.update import update_records_session
@@ -13,13 +16,12 @@ from sessionize.orm.selection import Selection
 from sessionize.orm.selection import TableSelection
 from sessionize.orm.selection_chaining import selection_chaining
 from sessionize.orm.session_parent import SessionParent
-
-from sessionize.sa import SqlConnection, Record, Engine, Table, sql
+from sessionize.sa.sa_functions import SqlConnection, Record
 
 
 @selection_chaining
 class SessionTable(SessionParent):
-    def __init__(self, name: str, engine: Engine, schema: Optional[str] = None):
+    def __init__(self, name: str, engine: sa_engine.Engine, schema: Optional[str] = None):
         SessionParent.__init__(self, engine)
         self.name = name
         self.schema = schema
@@ -108,14 +110,14 @@ class SessionTable(SessionParent):
 @dataclass
 class TableInfo():
     name: str
-    types: dict[str, sql.sqltypes]
+    types: dict
     row_count: int
     keys: list[str]
     first_record: Record
     schema: Optional[str] = None
 
 
-def select_table_info(table: Table, connection: SqlConnection) -> TableInfo:
+def select_table_info(table: sa.Table, connection: SqlConnection) -> TableInfo:
     types = get_column_types(table)
     row_count = get_row_count(table, connection)
     keys = primary_keys(table)
@@ -124,7 +126,7 @@ def select_table_info(table: Table, connection: SqlConnection) -> TableInfo:
 
 
 def repr_session_table(
-    sa_table: Table,
+    sa_table: sa.Table,
     connection: SqlConnection
 ) -> str:
     table_info = select_table_info(sa_table, connection)

@@ -1,7 +1,11 @@
 from typing import Optional, Union
 
-from sessionize.sa import Record, Table, Session
+from sqlalchemy import Table
+from sqlalchemy.orm.session import Session
+
+from sessionize.sa.sa_functions import Record
 from sessionize.utils.sa_orm import _get_table
+
 
 # TODO: finish insert_update_records_session function
 def insert_update_records_session(
