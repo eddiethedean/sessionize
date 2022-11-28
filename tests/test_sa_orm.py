@@ -11,7 +11,7 @@ from sessionize.utils.sa_orm import get_table, get_class, get_column
 # primary_keys
 class TestPrimaryKeys(unittest.TestCase):
     def primary_keys(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         keys = primary_keys(table)
         expected = ['id']
@@ -30,7 +30,7 @@ class TestPrimaryKeys(unittest.TestCase):
 # has_primary_key
 class TestHasPrimaryKey(unittest.TestCase):
     def has_primary_key(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         result = has_primary_key(table)
         expected = True
@@ -49,7 +49,7 @@ class TestHasPrimaryKey(unittest.TestCase):
 # TODO: get_table tests
 class TestGetTable(unittest.TestCase):
     def get_table(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         result = get_table('people', engine, schema=schema)
         expected = table
@@ -69,7 +69,7 @@ class TestGetTable(unittest.TestCase):
 # TODO: get_class tests
 class TestGetClass(unittest.TestCase):
     def get_class(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         result = get_class('people', engine, schema=schema)
         self.assertEqual(result.name, 'people')
 
@@ -86,7 +86,7 @@ class TestGetClass(unittest.TestCase):
 # get_column
 class TestGetColumn(unittest.TestCase):
     def get_column(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         result = get_column(table, 'id')
         self.assertEqual(result.name, 'id')
@@ -104,7 +104,7 @@ class TestGetColumn(unittest.TestCase):
 
 class TestSelectRecords(unittest.TestCase):
     def select_records(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         expected = [
             {'id': 1, 'name': 'Olivia', 'age': 17, 'address_id': 1},

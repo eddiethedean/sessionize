@@ -10,7 +10,7 @@ from sessionize.utils.sa_orm import get_column_types, get_primary_key_constraint
 
 class TestCreateTable(unittest.TestCase):
     def create_table(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
 
         cols = ['id', 'name', 'age']
         types = [int, str, int]
@@ -39,7 +39,7 @@ class TestCreateTable(unittest.TestCase):
         self.create_table(postgres_setup, schema='local')
 
     def create_table_error(self, setup_function, error, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
 
         cols = ['id', 'name', 'age']

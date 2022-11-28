@@ -200,8 +200,8 @@ def delete_all_records(
     engine: sa_engine.Engine
 ) -> None:
     session = sa_session.Session(engine)
-    delete_all_records_session(sa_table, session)
     try:
+        delete_all_records_session(sa_table, session)
         session.commit()
     except Exception as e:
         session.rollback()
@@ -222,8 +222,8 @@ def insert_from_table(
     engine: sa_engine.Engine
 ) -> None:
     session = sa_session.Session(engine)
-    insert_from_table_session(sa_table1, sa_table2, session)
     try:
+        insert_from_table_session(sa_table1, sa_table2, session)
         session.commit()
     except Exception as e:
         session.rollback()
@@ -246,8 +246,8 @@ def insert_records(
     engine: sa_engine.Engine
 ) -> None:
     session = sa_session.Session(engine)
-    insert_records_session(sa_table, records, session)
     try:
+        insert_records_session(sa_table, records, session)
         session.commit()
     except Exception as e:
         session.rollback()
@@ -516,8 +516,8 @@ def update_records(
     engine: sa_engine.Engine
 ) -> None:
     session = sa_session.Session(engine)
-    update_records_session(sa_table, records, session)
     try:
+        update_records_session(sa_table, records, session)
         session.commit()
     except Exception as e:
         session.rollback()

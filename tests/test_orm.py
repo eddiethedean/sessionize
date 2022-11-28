@@ -9,7 +9,7 @@ from sessionize.exceptions import ForceFail
 
 class TestSessionTable(unittest.TestCase):
     def insert_delete_update_records(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
 
         new_records = [
@@ -53,7 +53,7 @@ class TestSessionTable(unittest.TestCase):
         self.insert_delete_update_records(postgres_setup, schema='local')
 
     def insert_delete_update_records_fail(self, setup_function, schema=None):
-        engine  = setup_function(schema=schema)
+        engine, tbl1, tbl2  = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
 
         new_records = [

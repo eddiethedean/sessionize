@@ -15,7 +15,7 @@ class TestUpdateRecords(unittest.TestCase):
         """
         Test that update_record_sesssion works
         """
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
 
         new_ages = [

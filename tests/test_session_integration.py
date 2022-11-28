@@ -18,7 +18,7 @@ from sessionize.utils.delete import delete_records_session
 
 class TestCombined(unittest.TestCase):
     def insert_update(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
 
         new_people = [
@@ -59,7 +59,7 @@ class TestCombined(unittest.TestCase):
         self.insert_update(postgres_setup, schema='local')
 
     def delete_update_fail(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
 
         new_ages = [
@@ -67,9 +67,9 @@ class TestCombined(unittest.TestCase):
             {'id': 3, 'name': 'Emma', 'age': 20}
         ]
         session = sa_session.Session(engine)
-        delete_records_session(table, 'id', [2, 3], session, schema=schema)
-        update_records_session(table, new_ages, session, schema=schema)
         try:
+            delete_records_session(table, 'id', [2, 3], session, schema=schema)
+            update_records_session(table, new_ages, session, schema=schema)
             session.commit()
         except:
             session.rollback()
@@ -95,7 +95,7 @@ class TestCombined(unittest.TestCase):
         self.delete_update_fail(postgres_setup, schema='local')
 
     def update_delete(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
 
         new_ages = [
@@ -127,7 +127,7 @@ class TestCombined(unittest.TestCase):
         self.update_delete(postgres_setup, schema='local')
 
     def delete_insert_update(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
 
         new_people = [

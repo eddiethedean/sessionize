@@ -14,7 +14,7 @@ import sqlalchemy.exc as sa_exc
 # rename_column
 class TestRenameColumn(unittest.TestCase):
     def rename_column(self, setup_function, schema=None):
-        engine= setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         rename_column(table.name, 'name', 'first_name', engine, schema=schema)
         table = get_table(table.name, engine, schema=schema)
@@ -31,7 +31,7 @@ class TestRenameColumn(unittest.TestCase):
         self.rename_column(postgres_setup, schema='local')
 
     def raise_key_error(self, setup_function, error, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         with self.assertRaises(error):
             rename_column(table.name, 'names', 'first_name', engine, schema=schema)
@@ -46,7 +46,7 @@ class TestRenameColumn(unittest.TestCase):
         self.raise_key_error(postgres_setup, sa_exc.ProgrammingError, schema='local')
 
     def raise_operational_error(self, setup_function, error, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         with self.assertRaises(error):
             rename_column(table.name, 'name', 'age', engine, schema=schema)
@@ -63,7 +63,7 @@ class TestRenameColumn(unittest.TestCase):
 # drop_column
 class TestDropColumn(unittest.TestCase):
     def drop_column(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         drop_column(table.name, 'name', engine, schema=schema)
         table = get_table(table.name, engine, schema=schema)
@@ -80,7 +80,7 @@ class TestDropColumn(unittest.TestCase):
         self.drop_column(postgres_setup, schema='local')
 
     def raise_key_error(self, setup_function, error, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         with self.assertRaises(error):
             drop_column(table.name, 'names', engine, schema=schema)
@@ -98,7 +98,7 @@ class TestDropColumn(unittest.TestCase):
 # add_column
 class TestAddColumn(unittest.TestCase):
     def add_column(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         table = add_column(table.name, 'last_name', str, engine, schema=schema)
         cols = set(table.columns.keys())
@@ -115,7 +115,7 @@ class TestAddColumn(unittest.TestCase):
         self.add_column(postgres_setup, schema='local')
 
     def raise_operational_error(self, setup_function, error, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         with self.assertRaises(error):
             add_column(table.name, 'name', str, engine, schema=schema)
@@ -132,7 +132,7 @@ class TestAddColumn(unittest.TestCase):
 
 class TestRenameTable(unittest.TestCase):
     def rename_table(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         new_table_name = 'employees'
         table_names = sa.inspect(engine).get_table_names(schema=schema)
@@ -152,7 +152,7 @@ class TestRenameTable(unittest.TestCase):
         self.rename_table(postgres_setup, schema='local')
 
     def raise_key_error(self, setup_function, error, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         new_table_name = 'places'
         with self.assertRaises(error):
@@ -171,7 +171,7 @@ class TestRenameTable(unittest.TestCase):
 # TODO: copy_table tests
 class TestCopyTable(unittest.TestCase):
     def copy_table(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         new_table_name = 'employees'
         table_names = sa.inspect(engine).get_table_names(schema=schema)

@@ -10,7 +10,7 @@ from sessionize.utils.sa_orm import get_table
 
 class TestDropTable(unittest.TestCase):
     def drop_table(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
 
         drop_table(table.name, engine, schema=schema)
@@ -31,7 +31,7 @@ class TestDropTable(unittest.TestCase):
         self.drop_table(postgres_setup, schema='local')
 
     def drop_table_fail(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         with self.assertRaises(sa_exc.NoSuchTableError):
             drop_table('this_table_does_not_exist', engine, if_exists=False, schema=schema)
 

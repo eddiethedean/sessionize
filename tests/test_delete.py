@@ -13,7 +13,7 @@ from sessionize.exceptions import ForceFail
 class TestDeleteRecords(unittest.TestCase):
 
     def delete_records(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         
         session = sa_session.Session(engine)
@@ -39,7 +39,7 @@ class TestDeleteRecords(unittest.TestCase):
         self.delete_records(postgres_setup, schema='local')
 
     def delete_records_session_fails(self, setup_function, schema=None):
-        engine = setup_function(schema=schema)
+        engine, tbl1, tbl2 = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
         session = sa_session.Session(engine)
         delete_records_session(table, 'id', [1, 2], session, schema=schema)
