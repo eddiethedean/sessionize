@@ -20,7 +20,7 @@ def _get_table_name(
 
 def _get_table(
     sa_table: Union[str, Table],
-    engine: Engine,
+    engine: Engine | Session,
     schema: Optional[str] = None
 ) -> Table:
     if isinstance(sa_table, Table):

@@ -89,11 +89,12 @@ def get_table_constraints(sa_table: sa.Table):
 
 def get_primary_key_constraints(
     sa_table: sa.Table
-) -> tuple[str, list[str]] | None:
+) -> tuple[str, list[str]]:
     cons = get_table_constraints(sa_table)
     for con in cons:
         if isinstance(con, sa.PrimaryKeyConstraint):
             return con.name, [col.name for col in con.columns]
+    return tuple()
 
 
 def get_column_types(sa_table: sa.Table) -> dict:
