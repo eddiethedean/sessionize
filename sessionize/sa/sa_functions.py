@@ -136,7 +136,7 @@ def get_where_clause(
 def delete_records_session(
     sa_table: sa.Table,
     col_name: str,
-    values: list,
+    values: Sequence,
     session: sa_session.Session
 ) -> None:
     col = get_column(sa_table, col_name)
@@ -146,7 +146,7 @@ def delete_records_session(
 def delete_records(
     sa_table: sa.Table,
     col_name: str,
-    values: list,
+    values: Sequence,
     engine: sa_engine.Engine
 ) -> None:
     session = sa_session.Session(engine)
@@ -188,7 +188,7 @@ def insert_from_table_session(
 
 def insert_records_session(
     sa_table: sa.Table,
-    records: list[Record],
+    records: Sequence[Record],
     session: sa_session.Session
 ) -> None:
     table_class = get_class(sa_table.name, session, schema=sa_table.schema)
@@ -198,7 +198,7 @@ def insert_records_session(
 
 def insert_records(
     sa_table: sa.Table,
-    records: list[Record],
+    records: Sequence[Record],
     engine: sa_engine.Engine
 ) -> None:
     session = sa_session.Session(engine)
@@ -214,7 +214,7 @@ def select_records_all(
     sa_table: sa.Table,
     connection: SqlConnection,
     sorted: bool = False,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> list[Record]:
     if include_columns is not None:
         columns = [get_column(sa_table, column_name) for column_name in include_columns]
@@ -233,7 +233,7 @@ def select_records_chunks(
     connection: SqlConnection,
     chunksize: int = 2,
     sorted: bool = False,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> Generator[list[Record], None, None]:
     if include_columns is not None:
         columns = [get_column(sa_table, column_name) for column_name in include_columns]
@@ -252,7 +252,7 @@ def select_existing_values(
     sa_table: sa.Table,
     connection: SqlConnection,
     column_name: str,
-    values: list,
+    values: Sequence,
 ) -> list:
     column = get_column(sa_table, column_name)
     query = sa.select([column]).where(column.in_(values))
@@ -310,7 +310,7 @@ def select_records_slice(
     start: Optional[int] = None,
     stop: Optional[int] = None,
     sorted: bool = False,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> list[Record]:
     start, stop = _convert_slice_indexes(sa_table, connection, start, stop)
     if stop < start:
@@ -380,7 +380,7 @@ def select_record_by_primary_key(
     sa_table: sa.Table,
     connection: SqlConnection,
     primary_key_value: Record,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> Record:
     # TODO: check if primary key values exist
     where_clause = get_where_clause(sa_table, primary_key_value)
@@ -401,9 +401,9 @@ def select_record_by_primary_key(
 def select_records_by_primary_keys(
     sa_table: sa.Table,
     connection: SqlConnection,
-    primary_keys_values: list[Record],
+    primary_keys_values: Sequence[Record],
     schema: Optional[str] = None,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> list[Record]:
     # TODO: check if primary key values exist
     where_clauses = []
@@ -425,7 +425,7 @@ def select_column_values_by_primary_keys(
     sa_table: sa.Table,
     connection: SqlConnection,
     column_name: str,
-    primary_keys_values: list[Record]
+    primary_keys_values: Sequence[Record]
 ) -> list:
     # TODO: check if primary key values exist
     where_clauses = []
@@ -457,7 +457,7 @@ def select_value_by_primary_keys(
 
 def update_records_session(
     sa_table: sa.Table,
-    records: list[Record],
+    records: Sequence[Record],
     session: sa_session.Session
 ) -> None:
     table_name = sa_table.name
@@ -468,7 +468,7 @@ def update_records_session(
 
 def update_records(
     sa_table: sa.Table,
-    records: list[Record],
+    records: Sequence[Record],
     engine: sa_engine.Engine
 ) -> None:
     session = sa_session.Session(engine)
