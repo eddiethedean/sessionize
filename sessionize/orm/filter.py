@@ -1,9 +1,9 @@
-from collections.abc import Iterable, Iterator
+from typing import Sequence, Iterable, Iterator
 
 
 class Filter:
     # allows filter chain selection
-    def __init__(self, filter: Iterable[bool]):
+    def __init__(self, filter: Sequence[bool]):
         self.filter = filter
 
     def __repr__(self) -> str:

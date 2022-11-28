@@ -1,4 +1,4 @@
-__version__ = '0.0.11'
+__version__ = '0.0.12'
 
 #from sessionize.sa_versions.sa_1_4_29 import sa
 

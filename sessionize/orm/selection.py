@@ -3,7 +3,7 @@ from typing import Optional
 from numbers import Number
 
 from sessionize.sa.sa_functions import Record
-from sessionize.utils.select import select_primary_key_record_by_index
+from sessionize.utils.select import select_primary_key_record_by_index, select_records_all
 from sessionize.utils.select import select_primary_key_records_by_slice
 from sessionize.utils.select import select_records_by_primary_keys
 from sessionize.utils.select import select_record_by_primary_key
@@ -166,7 +166,7 @@ class TableSelection(Selection):
 
     @property
     def records(self) -> list:
-        return select_records(self.sa_table, self.session)
+        return select_records_all(self.sa_table, self.session)
 
     def head(self, size=5):
         if size < 0:
