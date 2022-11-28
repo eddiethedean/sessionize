@@ -2,7 +2,7 @@
 All SqlAlchemy functionality used in Sessionize is defined here.
 """
 
-from typing import Optional, Any, Generator
+from typing import Optional, Any, Generator, Sequence
 
 import sqlalchemy as sa
 import sqlalchemy.schema as sa_schema
@@ -117,8 +117,8 @@ def get_row_count(
 ) -> int:
     col_name = get_column_names(sa_table)[0]
     col = get_column(sa_table, col_name)
-    return session.execute(sa.func.count(col)).scalar()
-
+    result = session.execute(sa.func.count(col)).scalar()
+    return result if result is not None else 0
 
 def get_schemas(engine: sa_engine.Engine) -> list[str]:
     insp = sa.inspect(engine)
@@ -148,9 +148,9 @@ def delete_records(
     values: list,
     engine: sa_engine.Engine
 ) -> None:
+    session = sa_session.Session(engine)
+    delete_records_session(sa_table, col_name, values, session)
     try:
-        session = sa_session.Session(engine)
-        delete_records_session(sa_table, col_name, values, session)
         session.commit()
     except Exception as e:
         session.rollback()
@@ -168,9 +168,9 @@ def delete_all_records(
     sa_table: sa.Table,
     engine: sa_engine.Engine
 ) -> None:
+    session = sa_session.Session(engine)
+    delete_all_records_session(sa_table, session)
     try:
-        session = sa_session.Session(engine)
-        delete_all_records_session(sa_table, session)
         session.commit()
     except Exception as e:
         session.rollback()
@@ -200,9 +200,9 @@ def insert_records(
     records: list[Record],
     engine: sa_engine.Engine
 ) -> None:
+    session = sa_session.Session(engine)
+    insert_records_session(sa_table, records, session)
     try:
-        session = sa_session.Session(engine)
-        insert_records_session(sa_table, records, session)
         session.commit()
     except Exception as e:
         session.rollback()
@@ -275,7 +275,7 @@ def select_column_values_chunks(
 ) -> Generator[list, None, None]:
     query = sa.select(get_column(sa_table, column_name))
     stream = connection.execute(query, execution_options={'stream_results': True})
-    for results in stream.scalars().partitions(chunksize):
+    for results in stream.scalars().partitions(chunksize):  # type: ignore
         yield results
 
 
@@ -384,7 +384,7 @@ def select_record_by_primary_key(
     # TODO: check if primary key values exist
     where_clause = get_where_clause(sa_table, primary_key_value)
     if len(where_clause) == 0:
-        return []
+        raise MissingPrimaryKey('Primary key values missing in table.')
     if include_columns is not None:
         columns = [get_column(sa_table, column_name) for column_name in include_columns]
         query = sa.select(*columns).where((sa_elements.and_(*where_clause)))
@@ -470,9 +470,9 @@ def update_records(
     records: list[Record],
     engine: sa_engine.Engine
 ) -> None:
+    session = sa_session.Session(engine)
+    update_records_session(sa_table, records, session)
     try:
-        session = sa_session.Session(engine)
-        update_records_session(sa_table, records, session)
         session.commit()
     except Exception as e:
         session.rollback()
@@ -481,8 +481,8 @@ def update_records(
 
 def create_table(
     table_name: str,
-    column_names: list[str],
-    column_types: list[type],
+    column_names: Sequence[str],
+    column_types: Sequence,
     primary_key: str,
     engine: sa_engine.Engine,
     schema: Optional[str] = None,
@@ -515,7 +515,7 @@ def create_table(
 def drop_table(
     table: sa.Table | str,
     engine: sa_engine.Engine,
-    if_exists: Optional[bool] = True,
+    if_exists: bool = True,
     schema: Optional[str] = None
 ) -> None:
     if isinstance(table, str):
