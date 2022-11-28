@@ -98,7 +98,7 @@ class TestGetColumn(unittest.TestCase):
     def test_get_column_postgres(self):
         self.get_column(postgres_setup)
 
-    def test_get_column_postgres(self):
+    def test_get_column_postgres_schema(self):
         self.get_column(postgres_setup, schema='local')
 
 
@@ -121,5 +121,5 @@ class TestSelectRecords(unittest.TestCase):
     def test_select_records_postgres(self):
         self.select_records(postgres_setup)
 
-    def test_select_records_postgres(self):
+    def test_select_records_postgres_schema(self):
         self.select_records(postgres_setup, schema='local')

@@ -12,13 +12,14 @@ postgres_url = ''
 mysql_url = ''
 
 
-def setup(connection_string: str, schema: Optional[str] = None) -> tuple[sa_engine.Engine, sa.Table]:
+def setup(connection_string: str, schema: Optional[str] = None) -> tuple[sa_engine.Engine, sa.Table, sa.Table]:
     Base = sa_declarative.declarative_base()
 
     engine = sa.create_engine(connection_string, echo=False)
 
     if schema is not None:
-        if schema not in engine.dialect.get_schema_names(engine.connect()):
+        insp = sa.inspect(engine)
+        if schema not in insp.get_schema_names(engine.connect()):
                engine.execute(sa_schema.CreateSchema(schema))
 
     class People(Base):
@@ -61,18 +62,18 @@ def setup(connection_string: str, schema: Optional[str] = None) -> tuple[sa_engi
         session.add_all(people)
         session.add_all(places)
    
-    return engine
+    return engine, People.__table__, Places.__table__
 
 
-def sqlite_setup(path='sqlite:///data/test.db', schema=None) -> tuple[sa_engine.Engine, sa.Table]:
+def sqlite_setup(path='sqlite:///data/test.db', schema=None) -> tuple[sa_engine.Engine, sa.Table, sa.Table]:
     return setup(path, schema=schema)
 
 
-def postgres_setup(postgres_url=postgres_url, schema=None) -> tuple[sa_engine.Engine, sa.Table]:
+def postgres_setup(postgres_url=postgres_url, schema=None) -> tuple[sa_engine.Engine, sa.Table, sa.Table]:
     path = postgres_url
     return setup(path, schema=schema)
 
 
-def mysql_setup(shema=None) -> tuple[sa_engine.Engine, sa.Table]:
+def mysql_setup(shema=None) -> tuple[sa_engine.Engine, sa.Table, sa.Table]:
     path = mysql_url
     return setup(path, schema=shema)

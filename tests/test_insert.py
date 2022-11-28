@@ -54,10 +54,9 @@ class TestInsertRecords(unittest.TestCase):
             {'name': 'Odos', 'age': 35, 'addres_id': 2},
             {'name': 'Kayla', 'age': 28, 'addres_id': 2},
         ]
-        
+        session = sa_session.Session(engine)
+        insert_records_session(table, new_people, session, schema=schema)
         try:
-            session = sa_session.Session(engine)
-            insert_records_session(table, new_people, session, schema=schema)
             raise ForceFail
             session.commit()
         except ForceFail:

@@ -10,7 +10,7 @@ from sessionize.sa import sa_functions
 def drop_table(
     table: Union[Table, str],
     engine: Engine,
-    if_exists: Optional[bool] = True,
+    if_exists: bool = True,
     schema: Optional[str] = None
 ) -> None:
     sa_functions.drop_table(table, engine, if_exists, schema)

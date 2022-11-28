@@ -66,11 +66,10 @@ class TestCombined(unittest.TestCase):
             {'id': 2, 'name': 'Liam', 'age': 19},
             {'id': 3, 'name': 'Emma', 'age': 20}
         ]
-
+        session = sa_session.Session(engine)
+        delete_records_session(table, 'id', [2, 3], session, schema=schema)
+        update_records_session(table, new_ages, session, schema=schema)
         try:
-            session = sa_session.Session(engine)
-            delete_records_session(table, 'id', [2, 3], session, schema=schema)
-            update_records_session(table, new_ages, session, schema=schema)
             session.commit()
         except:
             session.rollback()

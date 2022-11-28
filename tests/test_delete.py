@@ -41,10 +41,9 @@ class TestDeleteRecords(unittest.TestCase):
     def delete_records_session_fails(self, setup_function, schema=None):
         engine = setup_function(schema=schema)
         table = get_table('people', engine, schema=schema)
-        
+        session = sa_session.Session(engine)
+        delete_records_session(table, 'id', [1, 2], session, schema=schema)
         try:
-            session = sa_session.Session(engine)
-            delete_records_session(table, 'id', [1, 2], session, schema=schema)
             raise ForceFail
             session.commit()
         except ForceFail:
