@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any, Generator, Optional, Union
 from dataclasses import dataclass
 from collections.abc import Iterable
 
@@ -61,8 +61,9 @@ class SessionTable(SessionParent):
             raise TypeError('value must be a dictionary or list')
         return self
 
-    def __iadd__(self, value: Union[Record, list[Record]]) -> None:
-        return self.__add__(value)
+    # TODO: += feature
+    # def __iadd__(self, value: Union[Record, list[Record]]) -> None:
+        # return self.__add__(value)
 
     @property
     def columns(self):
@@ -97,7 +98,7 @@ class SessionTable(SessionParent):
     def delete_one_record(self, column_name: str, value: Any) -> None:
         self.delete_records(column_name, [value])
 
-    def select_records(self, chunksize=None) -> list[Record]:
+    def select_records(self, chunksize=None) -> list[Record] | Generator[list[Record], None, None]:
         return select_records(self.sa_table, self.session, chunksize=chunksize, schema=self.schema)
 
     def head(self, size=5):
@@ -113,7 +114,7 @@ class TableInfo():
     types: dict
     row_count: int
     keys: list[str]
-    first_record: Record
+    first_record: Record | None
     schema: Optional[str] = None
 
 

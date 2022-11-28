@@ -113,7 +113,7 @@ def get_table_names(
 
 def get_row_count(
     sa_table: sa.Table,
-    session: sa_session.Session
+    session: SqlConnection
 ) -> int:
     col_name = get_column_names(sa_table)[0]
     col = get_column(sa_table, col_name)

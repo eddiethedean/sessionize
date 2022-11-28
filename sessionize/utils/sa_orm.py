@@ -146,7 +146,7 @@ def get_column_names(sa_table: Table) -> list[str]:
     return sa_functions.get_column_names(sa_table)
 
 
-def get_row_count(sa_table: Table, session: Session) -> int:
+def get_row_count(sa_table: Table, session: SqlConnection) -> int:
     return sa_functions.get_row_count(sa_table, session)
 
 
