@@ -3,6 +3,8 @@ from typing import Optional, Any, Sequence, Union, Generator
 
 # TODO: replace with interface
 from sqlalchemy import Table
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm.session import Session
 
 from sessionize.utils.sa_orm import _get_table, get_row_count, primary_keys
 from sessionize.sa import sa_functions
@@ -11,7 +13,7 @@ from sessionize.sa.sa_functions import Record, SqlConnection
 
 def select_records(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     chunksize: Optional[int] = None,
     schema: Optional[str] = None,
     sorted: bool = False,
@@ -37,14 +39,16 @@ def select_records(
     """
     table = _get_table(sa_table, connection, schema=schema)
     if chunksize is None:
-        return select_records_all(table, connection, sorted=sorted, include_columns=include_columns)
+        return select_records_all(table, connection, sorted=sorted,
+                                  include_columns=include_columns)
     else:
-        return select_records_chunks(table, connection, chunksize, sorted=sorted, include_columns=include_columns)
+        return select_records_chunks(table, connection, chunksize, sorted=sorted,
+                                     include_columns=include_columns)
 
 
 def select_records_all(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     schema: Optional[str] = None,
     sorted: bool = False,
     include_columns: Optional[Sequence[str]] = None
@@ -70,7 +74,7 @@ def select_records_all(
 
 def select_records_chunks(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     chunksize: int = 2,
     schema: Optional[str] = None,
     sorted: bool = False,
@@ -99,7 +103,7 @@ def select_records_chunks(
 
 def select_existing_values(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     column_name: str,
     values: Sequence,
     schema: Optional[str] = None
@@ -128,7 +132,7 @@ def select_existing_values(
 
 def select_column_values(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     column_name: str,
     chunksize: Optional[int] = None,
     schema: Optional[str] = None
@@ -156,14 +160,14 @@ def select_column_values(
     """
     table = _get_table(sa_table, connection, schema=schema)
     if chunksize is None:
-        return select_column_values_all(table, column_name, connection)
+        return select_column_values_all(table, connection, column_name)
     else:
-        return select_column_values_chunks(table, column_name, connection, chunksize)
+        return select_column_values_chunks(table, connection, column_name, chunksize)
 
 
 def select_column_values_all(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     column_name: str,
     schema: Optional[str] = None
 ) -> list:
@@ -191,7 +195,7 @@ def select_column_values_all(
 
 def select_column_values_chunks(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     column_name: str,
     chunksize: int,
     schema: Optional[str] = None
@@ -221,7 +225,7 @@ def select_column_values_chunks(
 
 def select_records_slice(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     start: Optional[int] = None,
     stop: Optional[int] = None,
     schema: Optional[str] = None,
@@ -247,7 +251,7 @@ def select_records_slice(
 
 def select_record_by_index(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     index: int,
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
@@ -269,7 +273,7 @@ def select_record_by_index(
 
 def select_first_record(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
 ) -> Union[dict, None]:
@@ -279,14 +283,16 @@ def select_first_record(
     Returns None if table is empty
     """
     table = _get_table(sa_table, connection, schema=schema)
-    for chunk in select_records(table, connection, chunksize=1, include_columns=include_columns):
+    for chunk in select_records_chunks(table, connection,
+                                       schema=schema, chunksize=1,
+                                       include_columns=include_columns):
         return chunk[0]
     return None
 
 
 def select_column_values_by_slice(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     column_name: str,
     start: Optional[int] = None,
     stop: Optional[int] = None,
@@ -301,7 +307,7 @@ def select_column_values_by_slice(
 
 def select_column_value_by_index(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     column_name: str,
     index: int,
     schema: Optional[str] = None
@@ -315,7 +321,7 @@ def select_column_value_by_index(
 
 def select_primary_key_records_by_slice(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     _slice: slice,
     schema: Optional[str] = None,
     sorted: bool = False
@@ -329,7 +335,7 @@ def select_primary_key_records_by_slice(
 
 def select_primary_key_values(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     schema: Optional[str] = None
 ) -> list[Record]:
     table = _get_table(sa_table, connection, schema=schema)
@@ -338,7 +344,7 @@ def select_primary_key_values(
 
 def select_primary_key_record_by_index(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     index: int,
     schema: Optional[str] = None
 ) -> Record:
@@ -356,7 +362,7 @@ def select_primary_key_record_by_index(
 
 def check_slice_primary_keys_match(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     start: int,
     stop: int,
     records: Sequence[Record],
@@ -382,7 +388,7 @@ def check_slice_primary_keys_match(
 
 def check_index_keys_match(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     index: int,
     record: Record,
     schema: Optional[str] = None
@@ -398,7 +404,7 @@ def check_index_keys_match(
 
 def select_record_by_primary_key(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     primary_key_value: Record,
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
@@ -407,12 +413,15 @@ def select_record_by_primary_key(
     Select a record by primary key values
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_record_by_primary_key(table, connection, primary_key_value, include_columns)
+    return sa_functions.select_record_by_primary_key(table,
+                                                     connection,
+                                                     primary_key_value,
+                                                     include_columns)
 
 
 def select_records_by_primary_keys(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     primary_keys_values: Sequence[Record],
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
@@ -421,7 +430,11 @@ def select_records_by_primary_keys(
     Select the records that match the primary key values
     """
     table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_records_by_primary_keys(table, connection, primary_keys_values, include_columns)
+    return sa_functions.select_records_by_primary_keys(table,
+                                                       connection,
+                                                       primary_keys_values,
+                                                       schema=schema,
+                                                       include_columns=include_columns)
 
 
 def select_column_values_by_primary_keys(
@@ -433,12 +446,15 @@ def select_column_values_by_primary_keys(
     """
     Select multiple values from a column by primary key values
     """
-    return sa_functions.select_column_values_by_primary_keys(sa_table, connection, column_name, primary_keys_values)
+    return sa_functions.select_column_values_by_primary_keys(sa_table,
+                                                             connection,
+                                                             column_name,
+                                                             primary_keys_values)
 
 
 def select_value_by_primary_keys(
     sa_table: Union[Table, str],
-    connection: SqlConnection,
+    connection: Engine | Session,
     column_name: str,
     primary_key_value: Record,
     schema: Optional[str] = None

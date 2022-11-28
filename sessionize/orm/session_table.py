@@ -4,6 +4,8 @@ from collections.abc import Iterable
 
 import sqlalchemy as sa
 import sqlalchemy.engine as sa_engine
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm.session import Session
 
 from sessionize.utils.delete import delete_records_session
 from sessionize.utils.insert import insert_records_session
@@ -118,7 +120,7 @@ class TableInfo():
     schema: Optional[str] = None
 
 
-def select_table_info(table: sa.Table, connection: SqlConnection) -> TableInfo:
+def select_table_info(table: sa.Table, connection: Engine | Session) -> TableInfo:
     types = get_column_types(table)
     row_count = get_row_count(table, connection)
     keys = primary_keys(table)
@@ -128,7 +130,7 @@ def select_table_info(table: sa.Table, connection: SqlConnection) -> TableInfo:
 
 def repr_session_table(
     sa_table: sa.Table,
-    connection: SqlConnection
+    connection: Engine | Session
 ) -> str:
     table_info = select_table_info(sa_table, connection)
     types = table_info.types
