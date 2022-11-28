@@ -10,6 +10,8 @@ import sqlalchemy.ext.automap as sa_automap
 import sqlalchemy.engine as sa_engine
 import sqlalchemy.sql.elements as sa_elements
 import sqlalchemy.orm.session as sa_session
+from sqlalchemy.engine import Engine
+from sqlalchemy.sql.expression import Select
 
 from sessionize.exceptions import MissingPrimaryKey, SliceError
 from sessionize.sa.type_convert import _type_convert
@@ -156,6 +158,34 @@ def delete_records(
     except Exception as e:
         session.rollback()
         raise e
+
+    
+def delete_record_by_values_session(
+    sa_table: sa.Table,
+    record: Record,
+    session: sa_session.Session
+) -> None:
+    where = build_where_from_record(sa_table, record)
+    session.query(sa_table).filter(where).delete(synchronize_session=False)
+
+
+def delete_records_by_values_session(
+    sa_table: sa.Table,
+    records: Sequence[Record],
+    session: sa_session.Session
+) -> None:
+    for record in records:
+        delete_record_by_values_session(sa_table, record, session)
+
+        
+def build_where_from_record(
+    sa_table: sa.Table,
+    record: Record
+) -> Select:
+    s = sa.select(sa_table)
+    for col, val in record.items():
+        s = s.where(sa_table.c[col]==val)
+    return s
 
 
 def delete_all_records_session(
