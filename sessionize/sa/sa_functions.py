@@ -216,6 +216,20 @@ def insert_from_table_session(
     session.execute(sa_table2.insert().from_select(sa_table1.columns.keys(), sa_table1))
 
 
+def insert_from_table(
+    sa_table1: sa.Table,
+    sa_table2: sa.Table,
+    engine: sa_engine.Engine
+) -> None:
+    session = sa_session.Session(engine)
+    insert_from_table_session(sa_table1, sa_table2, session)
+    try:
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    
+
 def insert_records_session(
     sa_table: sa.Table,
     records: Sequence[Record],
