@@ -1,5 +1,5 @@
 
-from typing import Optional, Any, Union, Generator
+from typing import Optional, Any, Sequence, Union, Generator
 
 # TODO: replace with interface
 from sqlalchemy import Table
@@ -15,7 +15,7 @@ def select_records(
     chunksize: Optional[int] = None,
     schema: Optional[str] = None,
     sorted: bool = False,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> Union[list[Record], Generator[list[Record], None, None]]:
     """
     Queries database for records in table.
@@ -47,7 +47,7 @@ def select_records_all(
     connection: SqlConnection,
     schema: Optional[str] = None,
     sorted: bool = False,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> list[Record]:
     """
     Queries database for records in table.
@@ -74,7 +74,7 @@ def select_records_chunks(
     chunksize: int = 2,
     schema: Optional[str] = None,
     sorted: bool = False,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> Generator[list[Record], None, None]:
     """
     Queries database for records in table.
@@ -101,7 +101,7 @@ def select_existing_values(
     sa_table: Union[Table, str],
     connection: SqlConnection,
     column_name: str,
-    values: list,
+    values: Sequence,
     schema: Optional[str] = None
 ) -> list:
     """
@@ -226,7 +226,7 @@ def select_records_slice(
     stop: Optional[int] = None,
     schema: Optional[str] = None,
     sorted: bool = False,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> list[Record]:
     """
 
@@ -250,7 +250,7 @@ def select_record_by_index(
     connection: SqlConnection,
     index: int,
     schema: Optional[str] = None,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> Record:
     """
     Select a record by index.
@@ -271,7 +271,7 @@ def select_first_record(
     sa_table: Union[Table, str],
     connection: SqlConnection,
     schema: Optional[str] = None,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> Union[dict, None]:
     """
     Select first record in table
@@ -359,7 +359,7 @@ def check_slice_primary_keys_match(
     connection: SqlConnection,
     start: int,
     stop: int,
-    records: list[Record],
+    records: Sequence[Record],
     schema: Optional[str] = None
 ) -> bool:
     """
@@ -401,7 +401,7 @@ def select_record_by_primary_key(
     connection: SqlConnection,
     primary_key_value: Record,
     schema: Optional[str] = None,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> Record:
     """
     Select a record by primary key values
@@ -413,9 +413,9 @@ def select_record_by_primary_key(
 def select_records_by_primary_keys(
     sa_table: Union[Table, str],
     connection: SqlConnection,
-    primary_keys_values: list[Record],
+    primary_keys_values: Sequence[Record],
     schema: Optional[str] = None,
-    include_columns: Optional[list[str]] = None
+    include_columns: Optional[Sequence[str]] = None
 ) -> list[Record]:
     """
     Select the records that match the primary key values
@@ -428,7 +428,7 @@ def select_column_values_by_primary_keys(
     sa_table: Table,
     connection: SqlConnection,
     column_name: str,
-    primary_keys_values: list[Record]
+    primary_keys_values: Sequence[Record]
 ) -> list:
     """
     Select multiple values from a column by primary key values

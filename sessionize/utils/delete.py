@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Sequence, Union, Optional
 
 from sessionize.utils.sa_orm import _get_table
 from sessionize.sa import sa_functions
@@ -13,7 +13,7 @@ from sqlalchemy.orm.session import Session
 def delete_records_session(
     sa_table: Union[Table, str],
     col_name: str,
-    values: list,
+    values: Sequence,
     session: Session,
     schema: Optional[str] = None
 ) -> None:
@@ -56,7 +56,7 @@ def delete_record_by_values_session(
 
 def delete_records_by_values_session(
     sa_table: Union[Table, str],
-    records: list[Record],
+    records: Sequence[Record],
     session: Session,
     schema: Optional[str] = None
 ) -> None:
@@ -68,7 +68,7 @@ def delete_records_by_values_session(
 def delete_records(
     sa_table: Union[Table, str],
     col_name: str,
-    values: list,
+    values: Sequence,
     engine: Engine,
     schema: Optional[str] = None
 ) -> None:

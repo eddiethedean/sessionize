@@ -23,5 +23,5 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     python_requires='>=3.9',
-    install_requires=['SQLAlchemy==1.4', 'alembic==1.7.5']
+    install_requires=['SQLAlchemy>=1.4', 'alembic>=1.7.5']
 )

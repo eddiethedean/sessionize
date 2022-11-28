@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Optional
+from typing import Optional, Sequence
 from numbers import Number
 
 from sessionize.sa.sa_functions import Record
@@ -55,7 +55,7 @@ class TableSelection(Selection):
         return get_row_count(self.sa_table, self.session)
 
     def __add__(self, other):
-        if isinstance(other, Iterable) and not isinstance(other, dict):
+        if isinstance(other, Sequence) and not isinstance(other, dict):
             self.insert(other)
         else:
             self.insert([other])
@@ -196,20 +196,20 @@ class TableSelection(Selection):
         # TODO: check if records match primary key values
         update_records_session(self.sa_table, records, self.session)
 
-    def insert(self, records: list[Record]) -> None:
+    def insert(self, records: Sequence[Record]) -> None:
         # TODO: check if records don't match any primary key values
         insert_records_session(self.sa_table, records, self.session)
 
     def delete(self) -> None:
         # delete all records in sub table
-        delete_records_by_values_session(self.sa_table, self.primary_key_values, self.session)
+        delete_records_by_values_session(self.sa_table, self.get_primary_key_values(), self.session)
 
 
 @selection_chaining
 class TableSubColumnSelection(TableSelection):
     # returned when all records are selected but a subset of columns are selected
-    def __init__(self, parent: SessionParent, column_names: Iterable[str], table_name: str):
-        TableSelection.__init__(self, parent, table_name)
+    def __init__(self, parent: SessionParent, column_names: Sequence[str], table_name: str):
+        super().__init__(self, parent, table_name)
         self.column_names = column_names
 
     def __repr__(self):
@@ -217,14 +217,14 @@ class TableSubColumnSelection(TableSelection):
 
     @property
     def records(self) -> list[Record]:
-        return select_records(self.sa_table, self.session, include_columns=self.column_names)
+        return select_records_all(self.sa_table, self.session, include_columns=self.column_names)
 
     def __getitem__(self, key):
         if isinstance(key, int):
             # TableSubColumnSelection[index] -> SubRecordSelection
             index = key
             primary_key_values = self.get_primary_key_values()
-            return SubRecordSelection(self.parent, primary_key_values[index], self.column_names)
+            return SubRecordSelection(self.parent, primary_key_values[index], self.column_names, self.parent.name)
 
         if isinstance(key, slice):
             # TableSubColumnSelection[slice] -> SubTableSubColumnSelection
@@ -316,7 +316,7 @@ class TableSubColumnSelection(TableSelection):
 class SubTableSelection(TableSelection):
     # returned when a subset of records is selecected
     def __init__(self, parent: SessionParent, primary_key_values: list[Record], table_name: str):
-        TableSelection.__init__(self, parent, table_name)
+        super().__init__(self, parent, table_name)
         self.primary_key_values = primary_key_values
 
     def __repr__(self):
@@ -453,7 +453,7 @@ class SubTableSubColumnSelection(SubTableSelection):
         column_names: list[str],
         table_name: str
     ) -> None:
-        SubTableSelection.__init__(self, parent, primary_key_values, table_name)
+        super().__init__(self, parent, primary_key_values, table_name)
         self.column_names = column_names
 
     def __repr__(self):
@@ -463,7 +463,7 @@ class SubTableSubColumnSelection(SubTableSelection):
         if isinstance(key, int):
             # SubTableSubColumnSelection[index] -> SubRecordSelection
             primary_key_values = self.get_primary_key_values()
-            return SubRecordSelection(self.parent, primary_key_values[key], self.column_names)
+            return SubRecordSelection(self.parent, primary_key_values[key], self.column_names, self.parent.name)
 
         if isinstance(key, slice):
             # SubTableSubColumnSelection[slice] -> SubTableSubColumnSelection
@@ -514,15 +514,12 @@ class ColumnSelection(Selection):
     def __iter__(self):
         return ColumnIterator(self)
 
-    def __len__(self):
-        return len(self.parent)
-
     def __getitem__(self, key):
         if isinstance(key, int):
             # ColumnSelection[int]
             index = key
             primary_key_values = self.get_primary_key_values()
-            return ValueSelection(self.parent, self.column_name, primary_key_values[index])
+            return ValueSelection(self.parent, self.column_name, primary_key_values[index], self.table_name)
         
         if isinstance(key, slice):
             # ColumnSelection[slice]
@@ -530,7 +527,7 @@ class ColumnSelection(Selection):
             primary_key_values = self.get_primary_key_values()
             return SubColumnSelection(self.parent, self.column_name, primary_key_values[_slice])
 
-        if isinstance(key, Iterable) and all(isinstance(item, bool) for item in key):
+        if isinstance(key, Sequence) and all(isinstance(item, bool) for item in key):
             # ColumnSelection[Iterable[bool]]
             filter = key
             primary_key_values = self.get_primary_keys_by_filter(filter)
@@ -639,12 +636,12 @@ class ColumnSelection(Selection):
         return select_column_values_all(self.sa_table, self.session, self.column_name)
 
     def get_records(self):
-        return select_records(self.sa_table, self.session)
+        return select_records_all(self.sa_table, self.session)
 
     def get_primary_key_values(self):
         return select_primary_key_values(self.sa_table, self.session)
 
-    def get_primary_keys_by_filter(self, filter: Iterable[bool]):
+    def get_primary_keys_by_filter(self, filter: Sequence[bool]):
         primary_key_values = self.get_primary_key_values()
         return [record for record, b in zip(primary_key_values, filter) if b]
 
@@ -655,10 +652,6 @@ class ColumnSelection(Selection):
     def get_primary_keys_by_slice(self, _slice):
         primary_keys = self.get_primary_key_values()
         return primary_keys[_slice]
-
-    def get_primary_keys_by_filter(self, filter: Iterable[bool]):
-        primary_key_values = self.get_primary_key_values()
-        return [record for record, b in zip(primary_key_values, filter) if b]
 
     def update(self, values):
         primary_key_values = self.get_primary_key_values()
@@ -676,7 +669,7 @@ class ColumnSelection(Selection):
 class SubColumnSelection(ColumnSelection):
     # returned when a subset of a column is selecected
     def __init__(self, parent: SessionParent, column_name: str, primary_key_values: list[Record], table_name: str):
-        ColumnSelection.__init__(self, parent, column_name, table_name)
+        super().__init__(self, parent, column_name, table_name)
         self.primary_key_values = primary_key_values
 
     def __repr__(self):
@@ -719,11 +712,7 @@ class RecordSelection(Selection):
 
     @property
     def record(self):
-        records = select_record_by_primary_key(self.sa_table, self.session, self.primary_key_values)
-        if len(records) == 0:
-            raise KeyError('Primary key values do not exist in table.')
-        else:
-            return records[0]
+        return select_record_by_primary_key(self.sa_table, self.session, self.primary_key_values)
 
     def update(self, record: Record) -> None:
         # update record with new values
@@ -734,10 +723,10 @@ class RecordSelection(Selection):
         delete_record_by_values_session(self.sa_table, self.primary_key_values, self.session)
 
 
-class SubRecordSelection(Record):
+class SubRecordSelection(RecordSelection):
     # returned when a record is selected and a subset of columns is selected
-    def __init__(self, parent: SessionParent, primary_key_values: Record, column_names: list[str], table_name: str):
-        RecordSelection.__init__(self, parent, primary_key_values, table_name)
+    def __init__(self, parent: SessionParent, primary_key_values: Record, column_names: Sequence[str], table_name: str):
+        super().__init__(self, parent, primary_key_values, table_name)
         self.column_names = column_names
 
     def __repr__(self):
