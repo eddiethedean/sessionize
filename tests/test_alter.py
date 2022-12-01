@@ -2,7 +2,7 @@ import unittest
 
 from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.select import select_records
-from sessionize.utils.sa_orm import get_table, get_column
+from sessionize.utils.features import get_table, get_column
 from sessionize.exceptions import ForceFail
 from sessionize.utils.alter import rename_column, drop_column, add_column, rename_table
 from sessionize.utils.alter import copy_table, replace_primary_key, name_primary_key

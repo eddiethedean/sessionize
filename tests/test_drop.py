@@ -5,7 +5,7 @@ import sqlalchemy.exc as sa_exc
 
 from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.drop import drop_table
-from sessionize.utils.sa_orm import get_table
+from sessionize.utils.features import get_table
 
 
 class TestDropTable(unittest.TestCase):

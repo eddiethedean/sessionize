@@ -7,11 +7,11 @@ from alembic.operations import Operations
 from sqlalchemy import Table, Column
 from sqlalchemy.engine import Engine
 
-from sessionize.utils.sa_orm import get_table, get_primary_key_constraints
+from sessionize.utils.features import get_table, get_primary_key_constraints
 from sessionize.utils.insert import insert_from_table
 from sessionize.utils.drop import drop_table
-from sessionize.utils.sa_orm import _get_table, _get_table_name
-from sessionize.sa.type_convert import _type_convert
+from sessionize.utils.features import _get_table, _get_table_name
+from sqlalchemize.type_convert import _type_convert
 
 
 def _get_op(

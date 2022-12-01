@@ -1,10 +1,9 @@
 from typing import Optional
 
-from sessionize.sa import sa_functions
-
 # TODO: replace with interfaces
 from sqlalchemy import Table
 from sqlalchemy.engine import Engine
+import sqlalchemize.create as create
 
 
 def create_table(
@@ -17,4 +16,4 @@ def create_table(
     autoincrement: Optional[bool] = True,
     if_exists: Optional[str] = 'error'
 ) -> Table:
-    return sa_functions.create_table(table_name, column_names, column_types, primary_key, engine, schema, autoincrement, if_exists)
+    return create.create_table(table_name, column_names, column_types, primary_key, engine, schema, autoincrement, if_exists)

@@ -1,18 +1,17 @@
-from sessionize.sa import sa_functions
-from sessionize.orm.selection import TableSelection
-from sessionize.orm.session_parent import SessionParent
-from sessionize.utils.sa_orm import get_schemas
+import sessionize.orm.selection as selection
+import sessionize.orm.session_parent as parent
+import sessionize.utils.features as features
 
 
-class SessionDatabase(SessionParent):
+class SessionDatabase(parent.SessionParent):
     def __init__(self, engine):
-        SessionParent.__init__(self, engine)
+        parent.SessionParent.__init__(self, engine)
         self.tables = {}
 
     def __repr__(self) -> str:
         return f"""SessionDatabase(table_names={self.table_names()})"""
 
-    def __getitem__(self, key: str) -> TableSelection:
+    def __getitem__(self, key: str) -> selection.TableSelection:
         # SessionDataBase[table_name]
         if isinstance(key, str):
             # Pull out schema if key has period.
@@ -21,17 +20,17 @@ class SessionDatabase(SessionParent):
             else:
                 schema, name = None, key
             if key not in self.tables:
-                self.tables[key] = TableSelection(self, name, schema=schema)
+                self.tables[key] = selection.TableSelection(self, name, schema=schema)
             return self.tables[key]
         raise KeyError('SessionDataBase key type can only be str.')
 
     def table_names(self, schema=None):
         if schema is not None:
-            names = sa_functions.get_table_names(self.engine, schema)
+            names = features.get_table_names(self.engine, schema)
             return [f'{schema}.{name}' for name in names]
         out = []
-        for schema in get_schemas(self.engine):
-            names = sa_functions.get_table_names(self.engine, schema)
+        for schema in features.get_schemas(self.engine):
+            names = features.get_table_names(self.engine, schema)
             names = [f'{schema}.{name}' for name in names]
             out.extend(names)
         return out

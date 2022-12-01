@@ -6,34 +6,31 @@ import sqlalchemy as sa
 import sqlalchemy.engine as sa_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm.session import Session
+from chaingang import selection_chaining
 
-from sessionize.utils.delete import delete_records_session
-from sessionize.utils.insert import insert_records_session
-from sessionize.utils.update import update_records_session
-from sessionize.utils.select import select_first_record, select_records, select_records_all
-from sessionize.utils.sa_orm import get_table, has_primary_key, get_column_names
-from sessionize.utils.sa_orm import get_column_types, get_row_count, primary_keys
-from sessionize.exceptions import MissingPrimaryKey
-from sessionize.orm.selection import Selection
-from sessionize.orm.selection import TableSelection
-from sessionize.orm.selection_chaining import selection_chaining
-from sessionize.orm.session_parent import SessionParent
-from sessionize.sa.sa_functions import SqlConnection, Record
+import sessionize.utils.delete as delete
+import sessionize.utils.insert as insert
+import sessionize.utils.update as update
+import sessionize.utils.select as select
+import sessionize.utils.features as features
+import sessionize.exceptions as exceptions
+import sessionize.orm.session_parent as parent
+import sessionize.utils.types as types
 
 
 @selection_chaining
-class SessionTable(SessionParent):
+class SessionTable(parent.SessionParent):
     def __init__(self, name: str, engine: sa_engine.Engine, schema: Optional[str] = None):
-        SessionParent.__init__(self, engine)
+        parent.SessionParent.__init__(self, engine)
         self.name = name
         self.schema = schema
-        self.sa_table = get_table(self.name, self.session, self.schema)
-        if not has_primary_key(self.sa_table):
-            raise MissingPrimaryKey(
+        self.sa_table = features.get_table(self.name, self.session, self.schema)
+        if not features.has_primary_key(self.sa_table):
+            raise exceptions.MissingPrimaryKey(
             'Sessionize requires sql table to have a primary key to work properly.\n' +
             'Use sessionize.create_primary_key to add a primary key to your table.')
         # Used when SessionTable is selected (__getitem__, __setitem__, __delitem__)
-        self.table_selection = TableSelection(self, self.name, schema=self.schema)
+        self.table_selection = select.TableSelection(self, self.name, schema=self.schema)
 
     def __repr__(self) -> str:
         return repr_session_table(self.sa_table, self.session)
@@ -41,7 +38,7 @@ class SessionTable(SessionParent):
     def __iter__(self):
         return iter(self.table_selection)
 
-    def __getitem__(self, key) -> Selection:
+    def __getitem__(self, key) -> select.Selection:
         return self.table_selection[key]
     
     def __setitem__(self, key, value) -> None:
@@ -51,9 +48,9 @@ class SessionTable(SessionParent):
         del self.table_selection[key]
 
     def __len__(self):
-        return get_row_count(self.sa_table, self.session)
+        return features.get_row_count(self.sa_table, self.session)
 
-    def __add__(self, value: Union[Record, list[Record]]):
+    def __add__(self, value: Union[types.Record, list[types.Record]]):
         # insert a record or list of records into table
         if isinstance(value, dict):
             self.insert_one_record(value)
@@ -69,39 +66,41 @@ class SessionTable(SessionParent):
 
     @property
     def columns(self):
-        return get_column_names(self.sa_table)
+        return features.get_column_names(self.sa_table)
 
     @property
     def records(self):
-        return select_records_all(self.sa_table, self.session)
+        return select.select_records_all(self.sa_table, self.session)
 
     @property
     def primary_keys(self):
-        return primary_keys(self.sa_table)
+        return features.primary_keys(self.sa_table)
 
     def info(self):
         return select_table_info(self.sa_table, self.session)
 
-    def insert_records(self, records: list[Record]) -> None:
-        insert_records_session(self.sa_table, records, self.session, schema=self.schema)
+    def insert_records(self, records: list[types.Record]) -> None:
+        insert.insert_records_session(self.sa_table, records, self.session, schema=self.schema)
 
-    def insert_one_record(self, record: Record) -> None:
+    def insert_one_record(self, record: types.Record) -> None:
         self.insert_records([record])
 
-    def update_records(self, records: list[Record]) -> None:
-        update_records_session(self.sa_table, records, self.session, schema=self.schema)
+    def update_records(self, records: list[types.Record]) -> None:
+        update.update_records_session(self.sa_table, records, self.session, schema=self.schema)
 
-    def update_one_record(self, record: Record) -> None:
+    def update_one_record(self, record: types.Record) -> None:
         self.update_records([record])
 
     def delete_records(self, column_name: str, values: list[Any]) -> None:
-        delete_records_session(self.sa_table, column_name, values, self.session, schema=self.schema)
+        delete.delete_records_session(self.sa_table, column_name, values, self.session, schema=self.schema)
 
     def delete_one_record(self, column_name: str, value: Any) -> None:
         self.delete_records(column_name, [value])
 
-    def select_records(self, chunksize=None) -> list[Record] | Generator[list[Record], None, None]:
-        return select_records(self.sa_table, self.session, chunksize=chunksize, schema=self.schema)
+    def select_records(
+        self,
+        chunksize=None) -> list[types.Record] | Generator[list[types.Record], None, None]:
+        return select.select_records(self.sa_table, self.session, chunksize=chunksize, schema=self.schema)
 
     def head(self, size=5):
         return self[:size]
@@ -116,15 +115,15 @@ class TableInfo():
     types: dict
     row_count: int
     keys: list[str]
-    first_record: Record | None
+    first_record: types.Record | None
     schema: Optional[str] = None
 
 
 def select_table_info(table: sa.Table, connection: Engine | Session) -> TableInfo:
-    types = get_column_types(table)
-    row_count = get_row_count(table, connection)
-    keys = primary_keys(table)
-    first_record = select_first_record(table, connection)
+    types = features.get_column_types(table)
+    row_count = features.get_row_count(table, connection)
+    keys = features.primary_keys(table)
+    first_record = select.select_first_record(table, connection)
     return TableInfo(table.name, types, row_count, keys, first_record, table.schema)
 
 

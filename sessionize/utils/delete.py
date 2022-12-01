@@ -1,13 +1,13 @@
-from typing import Sequence, Union, Optional
+from typing import Any, Dict, Sequence, Union, Optional
 
-from sessionize.utils.sa_orm import _get_table
-from sessionize.sa import sa_functions
-from sessionize.sa.sa_functions import Record
+from sessionize.utils.features import _get_table
+import sessionize.utils.types as types
 
 # TODO: replace with interfaces
 from sqlalchemy import Table
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm.session import Session
+import sqlalchemize.delete as delete
 
 
 def delete_records_session(
@@ -40,29 +40,29 @@ def delete_records_session(
     None
     """
     table = _get_table(sa_table, session, schema=schema)
-    sa_functions.delete_records_session(table, col_name, values, session)
+    delete.delete_records_session(table, col_name, values, session)
 
 
 def delete_record_by_values_session(
     sa_table: Union[Table, str],
-    record: Record,
+    record: types.Record,
     session: Session,
     schema: Optional[str] = None
 ) -> None:
     # Delete any records that match the given record values.
     table = _get_table(sa_table, session, schema=schema)
-    sa_functions.delete_record_by_values_session(table, record, session)
+    delete.delete_record_by_values_session(table, record, session)
 
 
 def delete_records_by_values_session(
     sa_table: Union[Table, str],
-    records: Sequence[Record],
+    records: Sequence[types.Record],
     session: Session,
     schema: Optional[str] = None
 ) -> None:
     # Delete any records that match the given records values.
     table = _get_table(sa_table, session, schema=schema)
-    sa_functions.delete_records_by_values_session(table, records, session)
+    delete.delete_records_by_values_session(table, records, session)
 
 
 def delete_records(
@@ -73,7 +73,7 @@ def delete_records(
     schema: Optional[str] = None
 ) -> None:
     table = _get_table(sa_table, engine, schema=schema)
-    sa_functions.delete_records(table, col_name, values, engine)
+    delete.delete_records(table, col_name, values, engine)
 
 
 def delete_all_records_session(
@@ -82,7 +82,7 @@ def delete_all_records_session(
     schema: Optional[str] = None
 ) -> None:
     table = _get_table(sa_table, session, schema=schema)
-    sa_functions.delete_all_records_session(table, session)
+    delete.delete_all_records_session(table, session)
 
 
 def delete_all_records(
@@ -91,4 +91,4 @@ def delete_all_records(
     schema: Optional[str] = None
 ) -> None:
     table = _get_table(sa_table, engine, schema=schema)
-    sa_functions.delete_all_records(table, engine)
+    delete.delete_all_records(table, engine)

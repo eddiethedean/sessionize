@@ -1,4 +1,4 @@
-__version__ = '0.0.12'
+__version__ = '0.0.16'
 
 #from sessionize.sa_versions.sa_1_4_29 import sa
 
@@ -10,7 +10,7 @@ from sessionize.utils.insert import insert_records_session
 from sessionize.utils.delete import delete_records_session, delete_all_records_session
 from sessionize.utils.update import update_records_session
 from sessionize.utils.select import select_records, select_column_values, select_existing_values
-from sessionize.utils.sa_orm import get_table
+from sessionize.utils.features import get_table
 
 # Not Sessionized
 from sessionize.utils.alter import rename_table, rename_column, add_column, drop_column

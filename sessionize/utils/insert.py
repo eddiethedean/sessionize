@@ -4,10 +4,10 @@ from typing import Optional, Sequence, Union
 from sqlalchemy import Table
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm.session import Session
+import sqlalchemize.insert as insert
 
-from sessionize.sa import sa_functions
-from sessionize.sa.sa_functions import Record
-from sessionize.utils.sa_orm import _get_table
+import sessionize.utils.types as types
+import sessionize.utils.features as features
 
 
 def insert_from_table_session(
@@ -20,9 +20,9 @@ def insert_from_table_session(
     Inserts all records from table1 into table2.
     Only add inserts to session. Does not execute.
     """
-    table1 = _get_table(sa_table1, session, schema=schema)
-    table2 = _get_table(sa_table2, session, schema=schema)
-    sa_functions.insert_from_table_session(table1, table2, session)
+    table1 = features._get_table(sa_table1, session, schema=schema)
+    table2 = features._get_table(sa_table2, session, schema=schema)
+    insert.insert_from_table_session(table1, table2, session)
 
 
 def insert_from_table(
@@ -35,14 +35,14 @@ def insert_from_table(
     Inserts all records from table1 into table2.
     Executes inserts.
     """
-    table1 = _get_table(sa_table1, engine, schema=schema)
-    table2 = _get_table(sa_table2, engine, schema=schema)
-    sa_functions.insert_from_table(table1, table2, engine)
+    table1 = features._get_table(sa_table1, engine, schema=schema)
+    table2 = features._get_table(sa_table2, engine, schema=schema)
+    insert.insert_from_table(table1, table2, engine)
 
 
 def insert_records_session(
     sa_table: Union[Table, str],
-    records: Sequence[Record],
+    records: Sequence[types.Record],
     session: Session,
     schema: Optional[str] = None
 ) -> None:
@@ -71,15 +71,15 @@ def insert_records_session(
     -------
     None
     """
-    table = _get_table(sa_table, session, schema=schema)
-    sa_functions.insert_records_session(table, records, session)
+    table = features.features_get_table(sa_table, session, schema=schema)
+    insert.insert_records_session(table, records, session)
 
 
 def insert_records(
     sa_table: Union[Table, str],
-    records: list[Record],
+    records: list[types.Record],
     engine: Engine,
     schema: Optional[str] = None
 ) -> None:
-    table = _get_table(sa_table, engine, schema=schema)
-    sa_functions.insert_records(table, records, engine)
+    table = features._get_table(sa_table, engine, schema=schema)
+    insert.insert_records(table, records, engine)

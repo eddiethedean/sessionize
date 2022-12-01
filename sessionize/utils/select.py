@@ -5,10 +5,10 @@ from typing import Optional, Any, Sequence, Union, Generator
 from sqlalchemy import Table
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm.session import Session
+import sqlalchemize.select as select
 
-from sessionize.utils.sa_orm import _get_table, get_row_count, primary_keys
-from sessionize.sa import sa_functions
-from sessionize.sa.sa_functions import Record, SqlConnection
+import sessionize.utils.features as features
+import sessionize.utils.types as types
 
 
 def select_records(
@@ -18,7 +18,7 @@ def select_records(
     schema: Optional[str] = None,
     sorted: bool = False,
     include_columns: Optional[Sequence[str]] = None
-) -> Union[list[Record], Generator[list[Record], None, None]]:
+) -> Union[list[types.Record], Generator[list[types.Record], None, None]]:
     """
     Queries database for records in table.
     Returns list of records in sql table.
@@ -37,7 +37,7 @@ def select_records(
     -------
     list of sql table records or generator of lists of records.
     """
-    table = _get_table(sa_table, connection, schema=schema)
+    table = features._get_table(sa_table, connection, schema=schema)
     if chunksize is None:
         return select_records_all(table, connection, sorted=sorted,
                                   include_columns=include_columns)
@@ -52,7 +52,7 @@ def select_records_all(
     schema: Optional[str] = None,
     sorted: bool = False,
     include_columns: Optional[Sequence[str]] = None
-) -> list[Record]:
+) -> list[types.Record]:
     """
     Queries database for records in table.
     Returns list of records in sql table.
@@ -68,8 +68,8 @@ def select_records_all(
     -------
     list of sql table records.
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_records_all(table, connection, sorted, include_columns)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_records_all(table, connection, sorted, include_columns)
 
 
 def select_records_chunks(
@@ -79,7 +79,7 @@ def select_records_chunks(
     schema: Optional[str] = None,
     sorted: bool = False,
     include_columns: Optional[Sequence[str]] = None
-) -> Generator[list[Record], None, None]:
+) -> Generator[list[types.Record], None, None]:
     """
     Queries database for records in table.
     Returns a generator of chunksized lists of sql table records.
@@ -97,8 +97,8 @@ def select_records_chunks(
     -------
     Generator of lists of sql table records.
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_records_chunks(table, connection, chunksize, sorted, include_columns)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_records_chunks(table, connection, chunksize, sorted, include_columns)
 
 
 def select_existing_values(
@@ -126,8 +126,8 @@ def select_existing_values(
     -------
     List of matching values.
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_existing_values(table, connection, column_name, values)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_existing_values(table, connection, column_name, values)
 
 
 def select_column_values(
@@ -158,7 +158,7 @@ def select_column_values(
     -------
     list of sql table column values or generator of lists of values.
     """
-    table = _get_table(sa_table, connection, schema=schema)
+    table = features._get_table(sa_table, connection, schema=schema)
     if chunksize is None:
         return select_column_values_all(table, connection, column_name)
     else:
@@ -189,8 +189,8 @@ def select_column_values_all(
     -------
     list of sql table column values.
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_column_values_all(table, connection, column_name)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_column_values_all(table, connection, column_name)
 
 
 def select_column_values_chunks(
@@ -219,8 +219,8 @@ def select_column_values_chunks(
     -------
     Generator of chunksized lists of sql table column values.
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_column_values_chunks(table, connection, column_name, chunksize)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_column_values_chunks(table, connection, column_name, chunksize)
 
 
 def select_records_slice(
@@ -231,7 +231,7 @@ def select_records_slice(
     schema: Optional[str] = None,
     sorted: bool = False,
     include_columns: Optional[Sequence[str]] = None
-) -> list[Record]:
+) -> list[types.Record]:
     """
 
     start: Starting index where the slicing of table records starts.
@@ -245,8 +245,8 @@ def select_records_slice(
     stop is optional, is the last index + 1 if None.
 
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_records_slice(table, connection, start, stop, sorted, include_columns)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_records_slice(table, connection, start, stop, sorted, include_columns)
 
 
 def select_record_by_index(
@@ -255,16 +255,16 @@ def select_record_by_index(
     index: int,
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
-) -> Record:
+) -> types.Record:
     """
     Select a record by index.
     """
-    table = _get_table(sa_table, connection, schema=schema)
+    table = features._get_table(sa_table, connection, schema=schema)
     if index < 0:
-        row_count = get_row_count(table, connection)
+        row_count = features.get_row_count(table, connection)
         if index < -row_count:
             raise IndexError('Index out of range.') 
-        index = sa_functions._calc_positive_index(index, row_count)
+        index = select._calc_positive_index(index, row_count)
     records = select_records_slice(table, connection, index, index+1, include_columns=include_columns)
     if len(records) == 0:
         raise IndexError('Index out of range.')
@@ -282,7 +282,7 @@ def select_first_record(
     Returns dictionary or
     Returns None if table is empty
     """
-    table = _get_table(sa_table, connection, schema=schema)
+    table = features._get_table(sa_table, connection, schema=schema)
     for chunk in select_records_chunks(table, connection,
                                        schema=schema, chunksize=1,
                                        include_columns=include_columns):
@@ -301,8 +301,8 @@ def select_column_values_by_slice(
     """
     Select a subset of column values by slice.
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_column_values_by_slice(table, connection, column_name, start, stop)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_column_values_by_slice(table, connection, column_name, start, stop)
 
 
 def select_column_value_by_index(
@@ -315,8 +315,8 @@ def select_column_value_by_index(
     """
     Select a column value by index.
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_column_value_by_index(table, connection, column_name, index)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_column_value_by_index(table, connection, column_name, index)
 
 
 def select_primary_key_records_by_slice(
@@ -325,20 +325,20 @@ def select_primary_key_records_by_slice(
     _slice: slice,
     schema: Optional[str] = None,
     sorted: bool = False
-) -> list[Record]:
+) -> list[types.Record]:
     """
     Select primary key values by slice.
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_primary_key_records_by_slice(table, connection, _slice, sorted)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_primary_key_records_by_slice(table, connection, _slice, sorted)
 
 
 def select_primary_key_values(
     sa_table: Union[Table, str],
     connection: Engine | Session,
     schema: Optional[str] = None
-) -> list[Record]:
-    table = _get_table(sa_table, connection, schema=schema)
+) -> list[types.Record]:
+    table = features._get_table(sa_table, connection, schema=schema)
     return select_primary_key_records_by_slice(table, connection, slice(None, None))
 
 
@@ -347,16 +347,16 @@ def select_primary_key_record_by_index(
     connection: Engine | Session,
     index: int,
     schema: Optional[str] = None
-) -> Record:
+) -> types.Record:
     """
     Select primary key values by index.
     """
-    table = _get_table(sa_table, connection, schema=schema)
+    table = features._get_table(sa_table, connection, schema=schema)
     if index < 0:
-        row_count = get_row_count(table, connection)
+        row_count = features.get_row_count(table, connection)
         if index < -row_count:
             raise IndexError('Index out of range.') 
-        index = sa_functions._calc_positive_index(index, row_count)
+        index = select._calc_positive_index(index, row_count)
     return select_primary_key_records_by_slice(table, connection, slice(index, index+1))[0]
 
 
@@ -365,15 +365,15 @@ def check_slice_primary_keys_match(
     connection: Engine | Session,
     start: int,
     stop: int,
-    records: Sequence[Record],
+    records: Sequence[types.Record],
     schema: Optional[str] = None
 ) -> bool:
     """
     Check if records have matching primary key values to slice of table records
     """
-    table = _get_table(sa_table, connection, schema=schema)
+    table = features._get_table(sa_table, connection, schema=schema)
     slice_key_values = select_primary_key_records_by_slice(table, connection, slice(start, stop))
-    keys = primary_keys(table)
+    keys = features.primary_keys(table)
     records_key_values = [{key:record[key] for key in keys} for record in records]
 
     if len(slice_key_values) != len(records_key_values):
@@ -390,14 +390,14 @@ def check_index_keys_match(
     sa_table: Union[Table, str],
     connection: Engine | Session,
     index: int,
-    record: Record,
+    record: types.Record,
     schema: Optional[str] = None
 ) -> bool:
     """
     Check if record's primary key values match index table record.
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    keys = primary_keys(table)
+    table = features._get_table(sa_table, connection, schema=schema)
+    keys = features.primary_keys(table)
     key_record = select_primary_key_record_by_index(table, connection, index)
     return {key:record[key] for key in keys} == key_record
 
@@ -405,15 +405,15 @@ def check_index_keys_match(
 def select_record_by_primary_key(
     sa_table: Union[Table, str],
     connection: Engine | Session,
-    primary_key_value: Record,
+    primary_key_value: types.Record,
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
-) -> Record:
+) -> types.Record:
     """
     Select a record by primary key values
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_record_by_primary_key(table,
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_record_by_primary_key(table,
                                                      connection,
                                                      primary_key_value,
                                                      include_columns)
@@ -422,15 +422,15 @@ def select_record_by_primary_key(
 def select_records_by_primary_keys(
     sa_table: Union[Table, str],
     connection: Engine | Session,
-    primary_keys_values: Sequence[Record],
+    primary_keys_values: Sequence[types.Record],
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
-) -> list[Record]:
+) -> list[types.Record]:
     """
     Select the records that match the primary key values
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_records_by_primary_keys(table,
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_records_by_primary_keys(table,
                                                        connection,
                                                        primary_keys_values,
                                                        schema=schema,
@@ -439,28 +439,28 @@ def select_records_by_primary_keys(
 
 def select_column_values_by_primary_keys(
     sa_table: Table,
-    connection: SqlConnection,
+    connection: types.SqlConnection,
     column_name: str,
-    primary_keys_values: Sequence[Record]
+    primary_keys_values: Sequence[types.Record]
 ) -> list:
     """
     Select multiple values from a column by primary key values
     """
-    return sa_functions.select_column_values_by_primary_keys(sa_table,
-                                                             connection,
-                                                             column_name,
-                                                             primary_keys_values)
+    return select.select_column_values_by_primary_keys(sa_table,
+                                                       connection,
+                                                       column_name,
+                                                       primary_keys_values)
 
 
 def select_value_by_primary_keys(
     sa_table: Union[Table, str],
     connection: Engine | Session,
     column_name: str,
-    primary_key_value: Record,
+    primary_key_value: types.Record,
     schema: Optional[str] = None
 ) -> Any:
     """
     Select a single value from a column by primary key values
     """
-    table = _get_table(sa_table, connection, schema=schema)
-    return sa_functions.select_value_by_primary_keys(table, connection, column_name, primary_key_value)
+    table = features._get_table(sa_table, connection, schema=schema)
+    return select.select_value_by_primary_keys(table, connection, column_name, primary_key_value)

@@ -3,8 +3,7 @@ from typing import Optional, Union
 # TODO: replace with interfaces
 from sqlalchemy import Table
 from sqlalchemy.engine import Engine
-
-from sessionize.sa import sa_functions
+import sqlalchemize.drop as drop
 
 
 def drop_table(
@@ -13,4 +12,4 @@ def drop_table(
     if_exists: bool = True,
     schema: Optional[str] = None
 ) -> None:
-    sa_functions.drop_table(table, engine, if_exists, schema)
+    drop.drop_table(table, engine, if_exists, schema)

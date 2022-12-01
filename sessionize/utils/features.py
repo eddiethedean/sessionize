@@ -1,12 +1,12 @@
 from typing import Optional, Union
 
 # TODO: replace with interfaces
-from sqlalchemy import Table, Column, sql
+from sqlalchemy import Table, Column
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm.session import Session
 
-from sessionize.sa.sa_functions import SqlConnection
-from sessionize.sa import sa_functions
+import sessionize.utils.types as types
+import sessionize.utils.features as features
 
 
 def _get_table_name(
@@ -44,7 +44,7 @@ def primary_keys(sa_table: Table) -> list[str]:
     -------
     list of primary key names.
     """
-    return sa_functions.primary_key_names(sa_table)
+    return features.primary_key_names(sa_table)
 
 
 def has_primary_key(sa_table: Table) -> bool:
@@ -68,7 +68,7 @@ def has_primary_key(sa_table: Table) -> bool:
 
 def get_table(
     table_name: str,
-    connection: SqlConnection,
+    connection: types.SqlConnection,
     schema: Optional[str] = None
 ) -> Table:
     """
@@ -88,12 +88,12 @@ def get_table(
     -------
     A SqlAlchemy mapped Table object.
     """
-    return sa_functions.get_table(table_name, connection, schema)
+    return features.get_table(table_name, connection, schema)
 
 
 def get_class(
     table_name: str,
-    connection: SqlConnection,
+    connection: types.AnySqlConnection,
     schema: Optional[str] = None
 ):
     """
@@ -116,14 +116,14 @@ def get_class(
     -------
     A SqlAlchemy table class object.
     """
-    return sa_functions.get_class(table_name, connection, schema)
+    return features.get_class(table_name, connection, schema)
 
 
 def get_column(
     sa_table: Table,
     column_name: str
 ) -> Column:
-    return sa_functions.get_column(sa_table, column_name)
+    return features.get_column(sa_table, column_name)
 
 
 def get_primary_key_constraints(
@@ -133,22 +133,22 @@ def get_primary_key_constraints(
         Returns dictionary of primary key constraint names
         and list of column names per contraint.
     """
-    return sa_functions.get_primary_key_constraints(sa_table)
+    return features.get_primary_key_constraints(sa_table)
 
 
 def get_column_types(sa_table: Table):
     """Returns dict of table column names:sql_type
     """
-    return sa_functions.get_column_types(sa_table)
+    return features.get_column_types(sa_table)
 
 
 def get_column_names(sa_table: Table) -> list[str]:
-    return sa_functions.get_column_names(sa_table)
+    return features.get_column_names(sa_table)
 
 
-def get_row_count(sa_table: Table, session: SqlConnection) -> int:
-    return sa_functions.get_row_count(sa_table, session)
+def get_row_count(sa_table: Table, session: types.SqlConnection) -> int:
+    return features.get_row_count(sa_table, session)
 
 
 def get_schemas(engine: Engine):
-    return sa_functions.get_schemas(engine)
+    return features.get_schemas(engine)

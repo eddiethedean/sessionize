@@ -3,7 +3,7 @@ import unittest
 import sqlalchemy.orm.session as sa_session
 
 from setup_test import sqlite_setup, postgres_setup
-from sessionize.utils.sa_orm import get_table
+from sessionize.utils.features import get_table
 from sessionize.utils.select import select_records
 from sessionize.exceptions import ForceFail
 from sessionize.utils.insert import insert_records_session

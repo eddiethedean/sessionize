@@ -3,14 +3,14 @@ from typing import Optional, Union
 from sqlalchemy import Table
 from sqlalchemy.orm.session import Session
 
-from sessionize.sa.sa_functions import Record
-from sessionize.utils.sa_orm import _get_table
+import sessionize.utils.types as types
+import sessionize.utils.features as features
 
 
 # TODO: finish insert_update_records_session function
 def insert_update_records_session(
     table: Union[Table, str],
-    records: list[Record],
+    records: list[types.Record],
     session: Session,
     schema: Optional[str] = None
 ) -> None:
@@ -38,7 +38,7 @@ def insert_update_records_session(
     -------
     None
     """
-    table = _get_table(table, session)
+    table = features._get_table(table, session)
     # figure out which records are updates, with primary key matches
     updates = []
 

@@ -5,7 +5,7 @@ import sqlalchemy.exc as sa_exc
 
 from setup_test import sqlite_setup, postgres_setup
 from sessionize.utils.create import create_table
-from sessionize.utils.sa_orm import get_column_types, get_primary_key_constraints, get_table
+from sessionize.utils.features import get_column_types, get_primary_key_constraints, get_table
 
 
 class TestCreateTable(unittest.TestCase):
