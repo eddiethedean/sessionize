@@ -729,7 +729,7 @@ class SubRecordSelection(RecordSelection):
     def __init__(
         self,
         parent: parent.SessionParent,
-        primary_key_values: types.VRecord,
+        primary_key_values: types.Record,
         column_names: Sequence[str],
         table_name: str
     ) -> None:

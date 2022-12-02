@@ -1,4 +1,4 @@
-from typing import Any, Generator, Optional, Union
+from typing import Any, Dict, Generator, Optional, Union
 from dataclasses import dataclass
 from collections.abc import Iterable
 
@@ -16,6 +16,7 @@ import sessionize.utils.features as features
 import sessionize.exceptions as exceptions
 import sessionize.orm.session_parent as parent
 import sessionize.utils.types as types
+import sessionize.orm.selection as selection
 
 
 @selection_chaining
@@ -30,7 +31,7 @@ class SessionTable(parent.SessionParent):
             'Sessionize requires sql table to have a primary key to work properly.\n' +
             'Use sessionize.create_primary_key to add a primary key to your table.')
         # Used when SessionTable is selected (__getitem__, __setitem__, __delitem__)
-        self.table_selection = select.TableSelection(self, self.name, schema=self.schema)
+        self.table_selection = selection.TableSelection(self, self.name, schema=self.schema)
 
     def __repr__(self) -> str:
         return repr_session_table(self.sa_table, self.session)
@@ -38,7 +39,7 @@ class SessionTable(parent.SessionParent):
     def __iter__(self):
         return iter(self.table_selection)
 
-    def __getitem__(self, key) -> select.Selection:
+    def __getitem__(self, key) -> selection.Selection:
         return self.table_selection[key]
     
     def __setitem__(self, key, value) -> None:
@@ -115,7 +116,7 @@ class TableInfo():
     types: dict
     row_count: int
     keys: list[str]
-    first_record: types.Record | None
+    first_record: Dict[str, Any] | None
     schema: Optional[str] = None
 
 

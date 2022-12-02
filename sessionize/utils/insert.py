@@ -71,7 +71,7 @@ def insert_records_session(
     -------
     None
     """
-    table = features.features_get_table(sa_table, session, schema=schema)
+    table = features._get_table(sa_table, session, schema=schema)
     insert.insert_records_session(table, records, session)
 
 

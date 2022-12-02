@@ -1,6 +1,6 @@
 import sessionize.orm.selection as selection
 import sessionize.orm.session_parent as parent
-import sessionize.utils.features as features
+import sqlalchemize.features as features
 
 
 class SessionDatabase(parent.SessionParent):

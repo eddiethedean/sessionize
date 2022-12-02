@@ -6,7 +6,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm.session import Session
 
 import sessionize.utils.types as types
-import sessionize.utils.features as features
+import sqlalchemize.features as features
 
 
 def _get_table_name(
@@ -93,7 +93,7 @@ def get_table(
 
 def get_class(
     table_name: str,
-    connection: types.AnySqlConnection,
+    connection: types.SqlConnection,
     schema: Optional[str] = None
 ):
     """
