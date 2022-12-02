@@ -7,7 +7,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="sessionize",
-    version="0.0.16",
+    version="0.0.17",
     description="Make changes to sql tables using SqlAlchmey sessions",
     long_description=README,
     long_description_content_type="text/markdown",
