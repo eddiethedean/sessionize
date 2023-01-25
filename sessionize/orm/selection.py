@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence
 from numbers import Number
 
 from chaingang import selection_chaining
@@ -171,18 +171,18 @@ class TableSelection(Selection):
     def get_primary_keys_by_index(self, index: int) -> types.Record:
         return select.select_primary_key_record_by_index(self.sa_table, self.session, index)
 
-    def get_primary_keys_by_slice(self, _slice: slice) -> list[types.Record]:
+    def get_primary_keys_by_slice(self, _slice: slice) -> List[types.Record]:
         return select.select_primary_key_records_by_slice(self.sa_table, self.session, _slice)
 
     # TODO: select_primary_key_values_by_filter function
-    def get_primary_keys_by_filter(self, filter: Iterable[bool]) -> list[types.Record]:
+    def get_primary_keys_by_filter(self, filter: Iterable[bool]) -> List[types.Record]:
         primary_key_values = self.get_primary_key_values()
         return [record for record, b in zip(primary_key_values, filter) if b]
 
-    def get_primary_key_values(self) -> list[types.Record]:
+    def get_primary_key_values(self) -> List[types.Record]:
         return select.select_primary_key_values(self.sa_table, self.session)
 
-    def update(self, records: list[types.Record]) -> None:
+    def update(self, records: List[types.Record]) -> None:
         # TODO: check if records match primary key values
         update.update_records_session(self.sa_table, records, self.session)
 
@@ -206,7 +206,7 @@ class TableSubColumnSelection(TableSelection):
         return f"TableSubColumnSelection(name='{self.table_name}', records={self.records})"
 
     @property
-    def records(self) -> list[types.Record]:
+    def records(self) -> List[types.Record]:
         return select.select_records_all(self.sa_table, self.session, include_columns=self.column_names)
 
     def __getitem__(self, key):
@@ -305,7 +305,7 @@ class TableSubColumnSelection(TableSelection):
 @selection_chaining
 class SubTableSelection(TableSelection):
     # returned when a subset of records is selecected
-    def __init__(self, parent: parent.SessionParent, primary_key_values: list[types.Record], table_name: str):
+    def __init__(self, parent: parent.SessionParent, primary_key_values: List[types.Record], table_name: str):
         super().__init__(self, parent, table_name)
         self.primary_key_values = primary_key_values
 
@@ -418,7 +418,7 @@ class SubTableSelection(TableSelection):
             raise NotImplemented('SubTableSelection only supports selection updating by int and slice.')
 
     @property
-    def records(self) -> list[types.Record]:
+    def records(self) -> List[types.Record]:
         return select.select_records_by_primary_keys(self.sa_table, self.session, self.primary_key_values)
 
     def get_primary_key_values(self):
@@ -439,8 +439,8 @@ class SubTableSubColumnSelection(SubTableSelection):
     def __init__(
         self,
         parent: parent.SessionParent,
-        primary_key_values: list[types.Record],
-        column_names: list[str],
+        primary_key_values: List[types.Record],
+        column_names: List[str],
         table_name: str
     ) -> None:
         super().__init__(self, parent, primary_key_values, table_name)

@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 # TODO: replace with interfaces
 from sqlalchemy import Table
@@ -77,7 +77,7 @@ def insert_records_session(
 
 def insert_records(
     sa_table: Union[Table, str],
-    records: list[types.Record],
+    records: List[types.Record],
     engine: Engine,
     schema: Optional[str] = None
 ) -> None:

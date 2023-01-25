@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generator, Optional, Union
+from typing import Any, Dict, Generator, List, Optional, Union
 from dataclasses import dataclass
 from collections.abc import Iterable
 
@@ -51,7 +51,7 @@ class SessionTable(parent.SessionParent):
     def __len__(self):
         return features.get_row_count(self.sa_table, self.session)
 
-    def __add__(self, value: Union[types.Record, list[types.Record]]):
+    def __add__(self, value: Union[types.Record, List[types.Record]]):
         # insert a record or list of records into table
         if isinstance(value, dict):
             self.insert_one_record(value)
@@ -80,19 +80,19 @@ class SessionTable(parent.SessionParent):
     def info(self):
         return select_table_info(self.sa_table, self.session)
 
-    def insert_records(self, records: list[types.Record]) -> None:
+    def insert_records(self, records: List[types.Record]) -> None:
         insert.insert_records_session(self.sa_table, records, self.session, schema=self.schema)
 
     def insert_one_record(self, record: types.Record) -> None:
         self.insert_records([record])
 
-    def update_records(self, records: list[types.Record]) -> None:
+    def update_records(self, records: List[types.Record]) -> None:
         update.update_records_session(self.sa_table, records, self.session, schema=self.schema)
 
     def update_one_record(self, record: types.Record) -> None:
         self.update_records([record])
 
-    def delete_records(self, column_name: str, values: list[Any]) -> None:
+    def delete_records(self, column_name: str, values: List[Any]) -> None:
         delete.delete_records_session(self.sa_table, column_name, values, self.session, schema=self.schema)
 
     def delete_one_record(self, column_name: str, value: Any) -> None:
@@ -100,7 +100,7 @@ class SessionTable(parent.SessionParent):
 
     def select_records(
         self,
-        chunksize=None) -> list[types.Record] | Generator[list[types.Record], None, None]:
+        chunksize=None) -> Union[List[types.Record], Generator[List[types.Record], None, None]]:
         return select.select_records(self.sa_table, self.session, chunksize=chunksize, schema=self.schema)
 
     def head(self, size=5):
@@ -115,12 +115,12 @@ class TableInfo():
     name: str
     types: dict
     row_count: int
-    keys: list[str]
-    first_record: Dict[str, Any] | None
+    keys: List[str]
+    first_record: Union[Dict[str, Any], None]
     schema: Optional[str] = None
 
 
-def select_table_info(table: sa.Table, connection: Engine | Session) -> TableInfo:
+def select_table_info(table: sa.Table, connection: Union[Engine, Session]) -> TableInfo:
     types = features.get_column_types(table)
     row_count = features.get_row_count(table, connection)
     keys = features.primary_keys(table)
@@ -130,7 +130,7 @@ def select_table_info(table: sa.Table, connection: Engine | Session) -> TableInf
 
 def repr_session_table(
     sa_table: sa.Table,
-    connection: Engine | Session
+    connection: Union[Engine, Session]
 ) -> str:
     table_info = select_table_info(sa_table, connection)
     types = table_info.types

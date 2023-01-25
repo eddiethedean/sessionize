@@ -37,7 +37,7 @@ def rename_column(
     table_name = _get_table_name(table_name)
     op = _get_op(engine)
     with op.batch_alter_table(table_name, schema=schema) as batch_op:
-        batch_op.alter_column(old_col_name, nullable=True, new_column_name=new_col_name)
+        batch_op.alter_column(old_col_name, nullable=True, new_column_name=new_col_name) # type: ignore
     return get_table(table_name, engine, schema=schema)
 
 
@@ -55,7 +55,7 @@ def drop_column(
     table_name = _get_table_name(table_name)
     op = _get_op(engine)
     with op.batch_alter_table(table_name, schema=schema) as batch_op:
-        batch_op.drop_column(col_name)
+        batch_op.drop_column(col_name) # type: ignore
     return get_table(table_name, engine, schema=schema)
 
 
@@ -70,7 +70,7 @@ def add_column(
     sa_type = _type_convert[dtype]
     op = _get_op(engine)
     col = Column(column_name, sa_type)
-    op.add_column(table_name, col, schema=schema)
+    op.add_column(table_name, col, schema=schema) # type: ignore
     return get_table(table_name, engine, schema=schema)
 
 
@@ -87,7 +87,7 @@ def rename_table(
     """
     old_table_name = _get_table_name(old_table_name)
     op = _get_op(engine)
-    op.rename_table(old_table_name, new_table_name, schema=schema)
+    op.rename_table(old_table_name, new_table_name, schema=schema) # type: ignore
     return get_table(new_table_name, engine, schema=schema)
 
 
@@ -108,7 +108,7 @@ def copy_table(
     op = _get_op(engine)
     if if_exists == 'replace':
         drop_table(new_table_name, engine, schema=schema)
-    op.create_table(new_table_name, *table.c, table.metadata, schema=schema)
+    op.create_table(new_table_name, *table.c, table.metadata, schema=schema) # type: ignore
     new_table = get_table(new_table_name, engine, schema=schema)
     insert_from_table(table, new_table, engine, schema=schema)
     return new_table
@@ -135,12 +135,12 @@ def replace_primary_key(
         # name primary key constraint if not named (sqlite)
         if keys[0] is None:
             constraint_name = f'pk_{table_name}'
-            batch_op.create_primary_key(constraint_name, keys[1])
+            batch_op.create_primary_key(constraint_name, keys[1]) # type: ignore
         else:
             constraint_name = keys[0]
-        batch_op.drop_constraint(constraint_name, type_='primary')
-        batch_op.create_unique_constraint(constraint_name, table_name, [column_name])
-        batch_op.create_primary_key(constraint_name, [column_name])
+        batch_op.drop_constraint(constraint_name, type_='primary') # type: ignore
+        batch_op.create_unique_constraint(constraint_name, table_name, [column_name]) # type: ignore
+        batch_op.create_primary_key(constraint_name, [column_name]) # type: ignore
         
     return get_table(table_name, engine)
 
@@ -162,8 +162,8 @@ def create_primary_key(
     op = _get_op(engine)
     with op.batch_alter_table(table_name, schema=schema) as batch_op:
         constraint_name = f'pk_{table_name}'
-        batch_op.create_unique_constraint(constraint_name, [column_name])
-        batch_op.create_primary_key(constraint_name, [column_name])
+        batch_op.create_unique_constraint(constraint_name, [column_name]) # type: ignore
+        batch_op.create_primary_key(constraint_name, [column_name]) # type: ignore
         
     return get_table(table_name, engine, schema=schema)
 

@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from sqlalchemy import Table
 from sqlalchemy.engine import Engine
@@ -11,7 +11,7 @@ import sessionize.utils.features as features
 
 def update_records_session(
     table: Union[Table, str],
-    records: list[types.Record],
+    records: List[types.Record],
     session: Session,
     schema: Optional[str] = None
 ) -> None:
@@ -47,7 +47,7 @@ def update_records_session(
 
 def update_records(
     sa_table: Union[Table, str],
-    records: list[types.Record],
+    records: List[types.Record],
     engine: Engine,
     schema: Optional[str] = None
 ) -> None:

@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from sqlalchemy import Table
 from sqlalchemy.orm.session import Session
@@ -10,7 +10,7 @@ import sessionize.utils.features as features
 # TODO: finish insert_update_records_session function
 def insert_update_records_session(
     table: Union[Table, str],
-    records: list[types.Record],
+    records: List[types.Record],
     session: Session,
     schema: Optional[str] = None
 ) -> None:

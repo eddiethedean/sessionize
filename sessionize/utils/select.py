@@ -1,5 +1,5 @@
 
-from typing import Optional, Any, Sequence, Union, Generator
+from typing import List, Optional, Any, Sequence, Union, Generator
 
 # TODO: replace with interface
 from sqlalchemy import Table
@@ -10,15 +10,17 @@ import sqlalchemize.select as select
 import sessionize.utils.features as features
 import sessionize.utils.types as types
 
+Connection = Union[Engine, Session]
+
 
 def select_records(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     chunksize: Optional[int] = None,
     schema: Optional[str] = None,
     sorted: bool = False,
     include_columns: Optional[Sequence[str]] = None
-) -> Union[list[types.Record], Generator[list[types.Record], None, None]]:
+) -> Union[List[types.Record], Generator[List[types.Record], None, None]]:
     """
     Queries database for records in table.
     Returns list of records in sql table.
@@ -48,11 +50,11 @@ def select_records(
 
 def select_records_all(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     schema: Optional[str] = None,
     sorted: bool = False,
     include_columns: Optional[Sequence[str]] = None
-) -> list[types.Record]:
+) -> List[types.Record]:
     """
     Queries database for records in table.
     Returns list of records in sql table.
@@ -74,12 +76,12 @@ def select_records_all(
 
 def select_records_chunks(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection:Connection,
     chunksize: int = 2,
     schema: Optional[str] = None,
     sorted: bool = False,
     include_columns: Optional[Sequence[str]] = None
-) -> Generator[list[types.Record], None, None]:
+) -> Generator[List[types.Record], None, None]:
     """
     Queries database for records in table.
     Returns a generator of chunksized lists of sql table records.
@@ -103,7 +105,7 @@ def select_records_chunks(
 
 def select_existing_values(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     column_name: str,
     values: Sequence,
     schema: Optional[str] = None
@@ -132,7 +134,7 @@ def select_existing_values(
 
 def select_column_values(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     column_name: str,
     chunksize: Optional[int] = None,
     schema: Optional[str] = None
@@ -167,7 +169,7 @@ def select_column_values(
 
 def select_column_values_all(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     column_name: str,
     schema: Optional[str] = None
 ) -> list:
@@ -195,7 +197,7 @@ def select_column_values_all(
 
 def select_column_values_chunks(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     column_name: str,
     chunksize: int,
     schema: Optional[str] = None
@@ -225,13 +227,13 @@ def select_column_values_chunks(
 
 def select_records_slice(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     start: Optional[int] = None,
     stop: Optional[int] = None,
     schema: Optional[str] = None,
     sorted: bool = False,
     include_columns: Optional[Sequence[str]] = None
-) -> list[types.Record]:
+) -> List[types.Record]:
     """
 
     start: Starting index where the slicing of table records starts.
@@ -251,7 +253,7 @@ def select_records_slice(
 
 def select_record_by_index(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     index: int,
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
@@ -273,7 +275,7 @@ def select_record_by_index(
 
 def select_first_record(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
 ) -> Union[dict, None]:
@@ -292,7 +294,7 @@ def select_first_record(
 
 def select_column_values_by_slice(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     column_name: str,
     start: Optional[int] = None,
     stop: Optional[int] = None,
@@ -307,7 +309,7 @@ def select_column_values_by_slice(
 
 def select_column_value_by_index(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     column_name: str,
     index: int,
     schema: Optional[str] = None
@@ -321,11 +323,11 @@ def select_column_value_by_index(
 
 def select_primary_key_records_by_slice(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     _slice: slice,
     schema: Optional[str] = None,
     sorted: bool = False
-) -> list[types.Record]:
+) -> List[types.Record]:
     """
     Select primary key values by slice.
     """
@@ -335,16 +337,16 @@ def select_primary_key_records_by_slice(
 
 def select_primary_key_values(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     schema: Optional[str] = None
-) -> list[types.Record]:
+) -> List[types.Record]:
     table = features._get_table(sa_table, connection, schema=schema)
     return select_primary_key_records_by_slice(table, connection, slice(None, None))
 
 
 def select_primary_key_record_by_index(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     index: int,
     schema: Optional[str] = None
 ) -> types.Record:
@@ -362,7 +364,7 @@ def select_primary_key_record_by_index(
 
 def check_slice_primary_keys_match(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     start: int,
     stop: int,
     records: Sequence[types.Record],
@@ -388,7 +390,7 @@ def check_slice_primary_keys_match(
 
 def check_index_keys_match(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     index: int,
     record: types.Record,
     schema: Optional[str] = None
@@ -404,7 +406,7 @@ def check_index_keys_match(
 
 def select_record_by_primary_key(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     primary_key_value: types.Record,
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
@@ -421,11 +423,11 @@ def select_record_by_primary_key(
 
 def select_records_by_primary_keys(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     primary_keys_values: Sequence[types.Record],
     schema: Optional[str] = None,
     include_columns: Optional[Sequence[str]] = None
-) -> list[types.Record]:
+) -> List[types.Record]:
     """
     Select the records that match the primary key values
     """
@@ -454,7 +456,7 @@ def select_column_values_by_primary_keys(
 
 def select_value_by_primary_keys(
     sa_table: Union[Table, str],
-    connection: Engine | Session,
+    connection: Connection,
     column_name: str,
     primary_key_value: types.Record,
     schema: Optional[str] = None

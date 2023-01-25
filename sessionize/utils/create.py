@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 # TODO: replace with interfaces
 from sqlalchemy import Table
@@ -8,8 +8,8 @@ import sqlalchemize.create as create
 
 def create_table(
     table_name: str,
-    column_names: list[str],
-    column_types: list[type],
+    column_names: List[str],
+    column_types: List[type],
     primary_key: str,
     engine: Engine,
     schema: Optional[str] = None,

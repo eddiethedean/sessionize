@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import List, Optional, Tuple, Union
 
 # TODO: replace with interfaces
 from sqlalchemy import Table, Column
@@ -20,7 +20,7 @@ def _get_table_name(
 
 def _get_table(
     sa_table: Union[str, Table],
-    engine: Engine | Session,
+    engine: Union[Engine, Session],
     schema: Optional[str] = None
 ) -> Table:
     if isinstance(sa_table, Table):
@@ -29,7 +29,7 @@ def _get_table(
         return get_table(sa_table, engine, schema=schema)
 
 
-def primary_keys(sa_table: Table) -> list[str]:
+def primary_keys(sa_table: Table) -> List[str]:
     """
     Given SqlAlchemy Table, query database for
     columns with primary key constraint.
@@ -128,7 +128,7 @@ def get_column(
 
 def get_primary_key_constraints(
     sa_table: Table
-) -> tuple[str, list[str]]:
+) -> Tuple[str, List[str]]:
     """
         Returns dictionary of primary key constraint names
         and list of column names per contraint.
@@ -142,7 +142,7 @@ def get_column_types(sa_table: Table):
     return features.get_column_types(sa_table)
 
 
-def get_column_names(sa_table: Table) -> list[str]:
+def get_column_names(sa_table: Table) -> List[str]:
     return features.get_column_names(sa_table)
 
 
